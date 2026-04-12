@@ -1,3 +1,4 @@
+import { requestUrl, RequestUrlResponse } from "obsidian";
 import {
   GenerationRequest,
   GenerationResponse,
@@ -44,20 +45,22 @@ export class OpenAIProvider implements AIProvider {
       body.temperature = request.temperature;
     }
 
-    const response = await fetch(`${baseUrl}/chat/completions`, {
+    const response = await requestUrl({
+      url: `${baseUrl}/chat/completions`,
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${this.config.apiKey}`
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      throw: false
     });
 
-    if (!response.ok) {
-      throw new Error(await this.extractError(response));
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(this.extractError(response));
     }
 
-    const data = await response.json();
+    const data = response.json;
     const text = data.choices?.[0]?.message?.content?.trim?.() ?? "";
     if (!text) {
       throw new Error("Provider returned an empty response.");
@@ -85,10 +88,12 @@ export class OpenAIProvider implements AIProvider {
       return false;
     }
     try {
-      const response = await fetch(`${this.config.baseUrl.replace(/\/$/, "")}/models`, {
-        headers: { Authorization: `Bearer ${this.config.apiKey}` }
+      const response = await requestUrl({
+        url: `${this.config.baseUrl.replace(/\/$/, "")}/models`,
+        headers: { Authorization: `Bearer ${this.config.apiKey}` },
+        throw: false
       });
-      return response.ok;
+      return response.status >= 200 && response.status < 300;
     } catch {
       return false;
     }
@@ -100,7 +105,7 @@ export class OpenAIProvider implements AIProvider {
     }
   }
 
-  private async extractError(response: Response): Promise<string> {
+  private extractError(response: RequestUrlResponse): string {
     if (response.status === 401 || response.status === 403) {
       return "OpenAI API key rejected. Check settings.";
     }
@@ -108,8 +113,8 @@ export class OpenAIProvider implements AIProvider {
       return "Rate limit hit. Wait a moment and retry.";
     }
     try {
-      const data = await response.json();
-      return data.error?.message ?? `OpenAI request failed (${response.status}).`;
+      const data = response.json;
+      return data?.error?.message ?? `OpenAI request failed (${response.status}).`;
     } catch {
       return `OpenAI request failed (${response.status}).`;
     }

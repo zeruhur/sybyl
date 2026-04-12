@@ -1,3 +1,4 @@
+import { requestUrl, RequestUrlResponse } from "obsidian";
 import {
   AnthropicProviderConfig,
   GenerationRequest,
@@ -37,7 +38,8 @@ export class AnthropicProvider implements AIProvider {
 
     content.push({ type: "text", text: request.userMessage });
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await requestUrl({
+      url: "https://api.anthropic.com/v1/messages",
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -50,14 +52,15 @@ export class AnthropicProvider implements AIProvider {
         temperature: request.temperature,
         system: request.systemPrompt,
         messages: [{ role: "user", content }]
-      })
+      }),
+      throw: false
     });
 
-    if (!response.ok) {
-      throw new Error(await this.extractError(response));
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(this.extractError(response));
     }
 
-    const data = await response.json();
+    const data = response.json;
     const text = (data.content ?? [])
       .map((item: { text?: string }) => item.text ?? "")
       .join("")
@@ -88,7 +91,8 @@ export class AnthropicProvider implements AIProvider {
       return false;
     }
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const response = await requestUrl({
+        url: "https://api.anthropic.com/v1/messages",
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -99,9 +103,10 @@ export class AnthropicProvider implements AIProvider {
           model: this.config.defaultModel,
           max_tokens: 1,
           messages: [{ role: "user", content: [{ type: "text", text: "ping" }] }]
-        })
+        }),
+        throw: false
       });
-      return response.ok;
+      return response.status >= 200 && response.status < 300;
     } catch {
       return false;
     }
@@ -113,7 +118,7 @@ export class AnthropicProvider implements AIProvider {
     }
   }
 
-  private async extractError(response: Response): Promise<string> {
+  private extractError(response: RequestUrlResponse): string {
     if (response.status === 401 || response.status === 403) {
       return "Anthropic API key rejected. Check settings.";
     }
@@ -121,8 +126,8 @@ export class AnthropicProvider implements AIProvider {
       return "Rate limit hit. Wait a moment and retry.";
     }
     try {
-      const data = await response.json();
-      return data.error?.message ?? `Anthropic request failed (${response.status}).`;
+      const data = response.json;
+      return data?.error?.message ?? `Anthropic request failed (${response.status}).`;
     } catch {
       return `Anthropic request failed (${response.status}).`;
     }

@@ -1,3 +1,4 @@
+import { requestUrl, RequestUrlResponse } from "obsidian";
 import {
   GeminiProviderConfig,
   GenerationRequest,
@@ -35,7 +36,8 @@ export class GeminiProvider implements AIProvider {
     }
     parts.push({ text: request.userMessage });
 
-    const response = await fetch(endpoint, {
+    const response = await requestUrl({
+      url: endpoint,
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -45,14 +47,15 @@ export class GeminiProvider implements AIProvider {
           temperature: request.temperature,
           maxOutputTokens: request.maxOutputTokens
         }
-      })
+      }),
+      throw: false
     });
 
-    if (!response.ok) {
-      throw new Error(await this.extractError(response, "Gemini"));
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(this.extractError(response, "Gemini"));
     }
 
-    const data = await response.json();
+    const data = response.json;
     const text = (data.candidates?.[0]?.content?.parts ?? [])
       .map((part: { text?: string }) => part.text ?? "")
       .join("")
@@ -79,45 +82,46 @@ export class GeminiProvider implements AIProvider {
       throw new Error("File too large. Gemini File API limit is 20MB.");
     }
 
-    const startResponse = await fetch(
-      `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${encodeURIComponent(this.config.apiKey)}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Goog-Upload-Protocol": "resumable",
-          "X-Goog-Upload-Command": "start",
-          "X-Goog-Upload-Header-Content-Length": String(fileContent.byteLength),
-          "X-Goog-Upload-Header-Content-Type": mimeType
-        },
-        body: JSON.stringify({ file: { display_name: displayName } })
-      }
-    );
+    const startResponse = await requestUrl({
+      url: `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${encodeURIComponent(this.config.apiKey)}`,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Upload-Protocol": "resumable",
+        "X-Goog-Upload-Command": "start",
+        "X-Goog-Upload-Header-Content-Length": String(fileContent.byteLength),
+        "X-Goog-Upload-Header-Content-Type": mimeType
+      },
+      body: JSON.stringify({ file: { display_name: displayName } }),
+      throw: false
+    });
 
-    if (!startResponse.ok) {
-      throw new Error(await this.extractError(startResponse, "Gemini"));
+    if (startResponse.status < 200 || startResponse.status >= 300) {
+      throw new Error(this.extractError(startResponse, "Gemini"));
     }
 
-    const uploadUrl = startResponse.headers.get("X-Goog-Upload-URL");
+    const uploadUrl = startResponse.headers["x-goog-upload-url"];
     if (!uploadUrl) {
       throw new Error("Gemini upload failed to return a resumable upload URL.");
     }
 
-    const uploadResponse = await fetch(uploadUrl, {
+    const uploadResponse = await requestUrl({
+      url: uploadUrl,
       method: "POST",
       headers: {
         "Content-Length": String(fileContent.byteLength),
         "X-Goog-Upload-Offset": "0",
         "X-Goog-Upload-Command": "upload, finalize"
       },
-      body: fileContent
+      body: fileContent,
+      throw: false
     });
 
-    if (!uploadResponse.ok) {
-      throw new Error(await this.extractError(uploadResponse, "Gemini"));
+    if (uploadResponse.status < 200 || uploadResponse.status >= 300) {
+      throw new Error(this.extractError(uploadResponse, "Gemini"));
     }
 
-    const uploaded = await uploadResponse.json();
+    const uploaded = uploadResponse.json;
     const fileName = uploaded.file?.name ?? uploaded.name;
     if (!fileName) {
       throw new Error("Gemini upload did not return file metadata.");
@@ -135,13 +139,14 @@ export class GeminiProvider implements AIProvider {
 
   async listSources(): Promise<UploadedFileInfo[]> {
     this.ensureConfigured();
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/files?key=${encodeURIComponent(this.config.apiKey)}`
-    );
-    if (!response.ok) {
-      throw new Error(await this.extractError(response, "Gemini"));
+    const response = await requestUrl({
+      url: `https://generativelanguage.googleapis.com/v1beta/files?key=${encodeURIComponent(this.config.apiKey)}`,
+      throw: false
+    });
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(this.extractError(response, "Gemini"));
     }
-    const data = await response.json();
+    const data = response.json;
     return (data.files ?? []).map((file: Record<string, string>) => ({
       provider: "gemini" as const,
       label: file.displayName ?? file.name ?? "Untitled",
@@ -158,12 +163,13 @@ export class GeminiProvider implements AIProvider {
     }
     const match = ref.file_uri.match(/files\/[^/?]+$/);
     const name = ref.file_uri.startsWith("files/") ? ref.file_uri : match?.[0] ?? ref.file_uri;
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/${name}?key=${encodeURIComponent(this.config.apiKey)}`,
-      { method: "DELETE" }
-    );
-    if (!response.ok) {
-      throw new Error(await this.extractError(response, "Gemini"));
+    const response = await requestUrl({
+      url: `https://generativelanguage.googleapis.com/v1beta/${name}?key=${encodeURIComponent(this.config.apiKey)}`,
+      method: "DELETE",
+      throw: false
+    });
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(this.extractError(response, "Gemini"));
     }
   }
 
@@ -172,10 +178,11 @@ export class GeminiProvider implements AIProvider {
       return false;
     }
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(this.config.apiKey)}`
-      );
-      return response.ok;
+      const response = await requestUrl({
+        url: `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(this.config.apiKey)}`,
+        throw: false
+      });
+      return response.status >= 200 && response.status < 300;
     } catch {
       return false;
     }
@@ -190,13 +197,14 @@ export class GeminiProvider implements AIProvider {
   private async waitForActiveFile(name: string): Promise<Record<string, string>> {
     const start = Date.now();
     while (Date.now() - start < 30_000) {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/${name}?key=${encodeURIComponent(this.config.apiKey)}`
-      );
-      if (!response.ok) {
-        throw new Error(await this.extractError(response, "Gemini"));
+      const response = await requestUrl({
+        url: `https://generativelanguage.googleapis.com/v1beta/${name}?key=${encodeURIComponent(this.config.apiKey)}`,
+        throw: false
+      });
+      if (response.status < 200 || response.status >= 300) {
+        throw new Error(this.extractError(response, "Gemini"));
       }
-      const data = await response.json();
+      const data = response.json;
       const file = data.file ?? data;
       if (file.state === "ACTIVE") {
         return file;
@@ -206,7 +214,7 @@ export class GeminiProvider implements AIProvider {
     throw new Error("Timed out waiting for Gemini file activation.");
   }
 
-  private async extractError(response: Response, providerName: string): Promise<string> {
+  private extractError(response: RequestUrlResponse, providerName: string): string {
     if (response.status === 401 || response.status === 403) {
       return `${providerName} API key rejected. Check settings.`;
     }
@@ -214,8 +222,8 @@ export class GeminiProvider implements AIProvider {
       return "Rate limit hit. Wait a moment and retry.";
     }
     try {
-      const data = await response.json();
-      return data.error?.message ?? `${providerName} request failed (${response.status}).`;
+      const data = response.json;
+      return data?.error?.message ?? `${providerName} request failed (${response.status}).`;
     } catch (error) {
       return asErrorMessage(error) || `${providerName} request failed (${response.status}).`;
     }

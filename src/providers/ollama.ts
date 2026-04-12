@@ -1,3 +1,4 @@
+import { requestUrl, RequestUrlResponse } from "obsidian";
 import {
   GenerationRequest,
   GenerationResponse,
@@ -24,7 +25,8 @@ export class OllamaProvider implements AIProvider {
       .filter((source) => source.textContent)
       .map((source) => `[SOURCE: ${source.ref.label}]\n${truncateSourceText(source.textContent ?? "")}\n[END SOURCE]`);
 
-    const response = await fetch(`${baseUrl}/api/chat`, {
+    const response = await requestUrl({
+      url: `${baseUrl}/api/chat`,
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -43,17 +45,18 @@ export class OllamaProvider implements AIProvider {
               : request.userMessage
           }
         ]
-      })
+      }),
+      throw: false
     });
 
-    if (!response.ok) {
+    if (response.status < 200 || response.status >= 300) {
       if (response.status === 404) {
         throw new Error(`Model '${model}' not found in Ollama. Check available models in settings.`);
       }
       throw new Error(`Ollama not reachable at ${baseUrl}. Is it running?`);
     }
 
-    const data = await response.json();
+    const data = response.json;
     const text = data.message?.content?.trim?.() ?? "";
     if (!text) {
       throw new Error("Provider returned an empty response.");
@@ -91,10 +94,13 @@ export class OllamaProvider implements AIProvider {
   }
 
   private async fetchTags(): Promise<OllamaTagsResponse> {
-    const response = await fetch(`${this.config.baseUrl.replace(/\/$/, "")}/api/tags`);
-    if (!response.ok) {
+    const response = await requestUrl({
+      url: `${this.config.baseUrl.replace(/\/$/, "")}/api/tags`,
+      throw: false
+    });
+    if (response.status < 200 || response.status >= 300) {
       throw new Error(`Ollama not reachable at ${this.config.baseUrl}. Is it running?`);
     }
-    return response.json();
+    return response.json as OllamaTagsResponse;
   }
 }

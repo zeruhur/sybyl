@@ -111,8 +111,44 @@ async function runGeneration(
 
 export function registerAllCommands(plugin: SybylPlugin): void {
   plugin.addCommand({
+    id: "sybyl:insert-frontmatter",
+    name: "Insert Note Frontmatter",
+    callback: async () => {
+      const context = await plugin.getActiveNoteContext();
+      if (!context?.view.file) {
+        return;
+      }
+      const values = await openInputModal(plugin.app, "Insert Sybyl Frontmatter", [
+        { key: "game", label: "Game / system", placeholder: "Ironsworn" },
+        { key: "pc_name", label: "PC name", optional: true },
+        { key: "pc_notes", label: "PC notes", optional: true, placeholder: "Ironclad warrior, scar on left cheek" },
+        { key: "language", label: "Language", optional: true, placeholder: "Leave blank for auto-detect" }
+      ]);
+      if (!values) {
+        return;
+      }
+      if (!values.game) {
+        new Notice("Game name is required.");
+        return;
+      }
+      await plugin.app.fileManager.processFrontMatter(context.view.file, (fm) => {
+        fm["game"] = values.game;
+        fm["provider"] = fm["provider"] ?? plugin.settings.activeProvider;
+        fm["oracle_mode"] = fm["oracle_mode"] ?? "yes-no";
+        fm["lonelog"] = fm["lonelog"] ?? plugin.settings.lonelogMode;
+        fm["scene_counter"] = fm["scene_counter"] ?? 1;
+        fm["session_number"] = fm["session_number"] ?? 1;
+        if (values.pc_name) fm["pc_name"] = values.pc_name;
+        if (values.pc_notes) fm["pc_notes"] = values.pc_notes;
+        if (values.language) fm["language"] = values.language;
+      });
+      new Notice("Sybyl frontmatter inserted.");
+    }
+  });
+
+  plugin.addCommand({
     id: "sybyl:start-scene",
-    name: "Sybyl: Start Scene",
+    name: "Start Scene",
     callback: async () => {
       const context = await plugin.getActiveNoteContext();
       if (!context?.view.file) {
@@ -146,7 +182,7 @@ export function registerAllCommands(plugin: SybylPlugin): void {
 
   plugin.addCommand({
     id: "sybyl:declare-action",
-    name: "Sybyl: Declare Action",
+    name: "Declare Action",
     callback: async () => {
       const values = await openInputModal(plugin.app, "Declare Action", [
         { key: "action", label: "Action" },
@@ -168,7 +204,7 @@ export function registerAllCommands(plugin: SybylPlugin): void {
 
   plugin.addCommand({
     id: "sybyl:ask-oracle",
-    name: "Sybyl: Ask Oracle",
+    name: "Ask Oracle",
     callback: async () => {
       const context = await plugin.getActiveNoteContext();
       if (!context) {
@@ -204,7 +240,7 @@ export function registerAllCommands(plugin: SybylPlugin): void {
 
   plugin.addCommand({
     id: "sybyl:interpret-oracle",
-    name: "Sybyl: Interpret Oracle Result",
+    name: "Interpret Oracle Result",
     callback: async () => {
       const context = await plugin.getActiveNoteContext();
       if (!context) {
@@ -235,7 +271,7 @@ export function registerAllCommands(plugin: SybylPlugin): void {
 
   plugin.addCommand({
     id: "sybyl:suggest-consequence",
-    name: "Sybyl: Suggest Consequence",
+    name: "Suggest Consequence",
     callback: async () => {
       await runGeneration(
         plugin,
@@ -250,7 +286,7 @@ export function registerAllCommands(plugin: SybylPlugin): void {
 
   plugin.addCommand({
     id: "sybyl:expand-scene",
-    name: "Sybyl: Expand Scene into Prose",
+    name: "Expand Scene into Prose",
     callback: async () => {
       await runGeneration(
         plugin,
@@ -266,7 +302,7 @@ export function registerAllCommands(plugin: SybylPlugin): void {
 
   plugin.addCommand({
     id: "sybyl:upload-source",
-    name: "Sybyl: Upload Source File",
+    name: "Add Source File",
     callback: async () => {
       const context = await plugin.getActiveNoteContext();
       if (!context?.view.file) {
@@ -282,7 +318,7 @@ export function registerAllCommands(plugin: SybylPlugin): void {
 
   plugin.addCommand({
     id: "sybyl:manage-sources",
-    name: "Sybyl: Manage Sources",
+    name: "Manage Sources",
     callback: async () => {
       await manageSources(plugin);
     }
@@ -290,7 +326,7 @@ export function registerAllCommands(plugin: SybylPlugin): void {
 
   plugin.addCommand({
     id: "sybyl:lonelog-new-scene",
-    name: "Sybyl: New Scene",
+    name: "New Scene",
     callback: async () => {
       const context = await plugin.getActiveNoteContext();
       if (!context?.view.file) {
@@ -320,7 +356,7 @@ export function registerAllCommands(plugin: SybylPlugin): void {
 
   plugin.addCommand({
     id: "sybyl:lonelog-parse-context",
-    name: "Sybyl: Update Scene Context from Log",
+    name: "Update Scene Context from Log",
     callback: async () => {
       const context = await plugin.getActiveNoteContext();
       if (!context?.view.file) {
@@ -338,7 +374,7 @@ export function registerAllCommands(plugin: SybylPlugin): void {
 
   plugin.addCommand({
     id: "sybyl:lonelog-session-break",
-    name: "Sybyl: New Session Header",
+    name: "New Session Header",
     callback: async () => {
       const context = await plugin.getActiveNoteContext();
       if (!context?.view.file) {

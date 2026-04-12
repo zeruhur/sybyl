@@ -1,0 +1,10 @@
+{
+  "id": "sybyl",
+  "name": "Sybyl",
+  "version": "0.1.0",
+  "minAppVersion": "1.4.0",
+  "description": "Solo tabletop role-playing inside Obsidian, powered by multiple AI providers. The Sybyl speaks; you decide.",
+  "author": "OpenAI Codex",
+  "authorUrl": "",
+  "isDesktopOnly": false
+}

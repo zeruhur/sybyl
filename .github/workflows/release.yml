@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "*"
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run check
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Verify manifest version matches tag
+        shell: bash
+        run: |
+          TAG_NAME="${GITHUB_REF_NAME#v}"
+          MANIFEST_VERSION="$(node -p "require('./manifest.json').version")"
+          if [ "$TAG_NAME" != "$MANIFEST_VERSION" ]; then
+            echo "Tag version '$TAG_NAME' does not match manifest version '$MANIFEST_VERSION'."
+            exit 1
+          fi
+
+      - name: Ensure release notes file exists
+        shell: bash
+        run: |
+          if [ ! -f README.md ]; then
+            echo "README.md is missing."
+            exit 1
+          fi
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            main.js
+            manifest.json
+            versions.json

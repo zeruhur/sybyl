@@ -99,8 +99,8 @@ export class VaultFilePickerModal extends Modal {
         .setDesc(file.extension.toLowerCase())
         .addButton((button) => {
           button.setButtonText("Select").setCta().onClick(() => {
-            this.close();
             this.onPick(file);
+            this.close();
           });
         });
     });

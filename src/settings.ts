@@ -9,10 +9,10 @@ import { ProviderID, SybylSettings, ValidationState } from "./types";
 export const DEFAULT_SETTINGS: SybylSettings = {
   activeProvider: "gemini",
   providers: {
-    gemini: { apiKey: "", defaultModel: "gemini-2.0-flash" },
-    openai: { apiKey: "", defaultModel: "gpt-4o", baseUrl: "https://api.openai.com/v1" },
-    anthropic: { apiKey: "", defaultModel: "claude-3-5-sonnet-20241022" },
-    ollama: { baseUrl: "http://localhost:11434", defaultModel: "llama3.2" }
+    gemini: { apiKey: "", defaultModel: "gemini-3.1-pro-preview" },
+    openai: { apiKey: "", defaultModel: "gpt-5.2", baseUrl: "https://api.openai.com/v1" },
+    anthropic: { apiKey: "", defaultModel: "claude-sonnet-4-6" },
+    ollama: { baseUrl: "http://localhost:11434", defaultModel: "gemma3" }
   },
   insertionMode: "cursor",
   showTokenCount: false,
@@ -36,9 +36,17 @@ export function normalizeSettings(raw: Partial<SybylSettings> | null | undefined
   };
 }
 
-const GEMINI_MODELS = ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-2.0-pro"];
-const OPENAI_MODELS = ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"];
-const ANTHROPIC_MODELS = ["claude-3-5-sonnet-20241022", "claude-3-haiku-20240307", "claude-3-opus-20240229"];
+const GEMINI_MODELS = [
+  "gemini-3.1-pro-preview",
+  "gemini-3.1-pro-preview-customtools",
+  "gemini-2.5-flash"
+];
+const OPENAI_MODELS = ["gpt-5.2", "gpt-4.1", "gpt-4.1-mini"];
+const ANTHROPIC_MODELS = [
+  "claude-opus-4-6",
+  "claude-sonnet-4-6",
+  "claude-haiku-4-5-20251001"
+];
 
 export class SybylSettingTab extends PluginSettingTab {
   private validation: Partial<Record<ProviderID, ValidationState>> = {};

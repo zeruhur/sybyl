@@ -21,31 +21,36 @@ export class OpenAIProvider implements AIProvider {
       .filter((source) => source.textContent)
       .map((source) => `[SOURCE: ${source.ref.label}]\n${truncateSourceText(source.textContent ?? "")}\n[END SOURCE]`);
 
+    const body: Record<string, unknown> = {
+      model,
+      max_tokens: request.maxOutputTokens,
+      messages: [
+        { role: "system", content: request.systemPrompt },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: sourceBlocks.length
+                ? `${sourceBlocks.join("\n\n")}\n\n${request.userMessage}`
+                : request.userMessage
+            }
+          ]
+        }
+      ]
+    };
+
+    if (!model.startsWith("gpt-5")) {
+      body.temperature = request.temperature;
+    }
+
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${this.config.apiKey}`
       },
-      body: JSON.stringify({
-        model,
-        temperature: request.temperature,
-        max_tokens: request.maxOutputTokens,
-        messages: [
-          { role: "system", content: request.systemPrompt },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: sourceBlocks.length
-                  ? `${sourceBlocks.join("\n\n")}\n\n${request.userMessage}`
-                  : request.userMessage
-              }
-            ]
-          }
-        ]
-      })
+      body: JSON.stringify(body)
     });
 
     if (!response.ok) {

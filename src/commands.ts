@@ -12,7 +12,7 @@ import {
   LonelogFormatOptions
 } from "./lonelog/formatter";
 import { parseLonelogContext, serializeContext } from "./lonelog/parser";
-import { ManageSourcesModal, openInputModal, pickLocalFile, pickVaultFile } from "./modals";
+import { ManageSourcesModal, openInputModal, pickVaultFile } from "./modals";
 import { getProvider } from "./providers";
 import { NoteFrontMatter, SourceRef, SybylSettings, UploadedFileInfo } from "./types";
 
@@ -50,30 +50,6 @@ function parseLonelogOracleResponse(text: string): { result: string; interpretat
 
 async function addSourceToNote(plugin: SybylPlugin, file: TFile, fm: NoteFrontMatter): Promise<void> {
   const providerId = fm.provider ?? plugin.settings.activeProvider;
-  const provider = getProvider(plugin.settings, providerId);
-
-  if (providerId === "gemini") {
-    const fileHandle = await pickLocalFile();
-    if (!fileHandle) {
-      return;
-    }
-    new Notice("Uploading source...");
-    const uploaded = await provider.uploadSource(
-      await fileHandle.arrayBuffer(),
-      inferMimeType(fileHandle),
-      fileHandle.name
-    );
-    await upsertSourceRef(plugin.app, file, {
-      label: uploaded.label,
-      provider: "gemini",
-      mime_type: uploaded.mime_type,
-      file_uri: uploaded.file_uri,
-      expiresAt: uploaded.expiresAt
-    });
-    new Notice(`Source uploaded: ${uploaded.file_uri ?? uploaded.label}`);
-    return;
-  }
-
   const vaultFile = await pickVaultFile(plugin.app, "Choose a vault file");
   if (!vaultFile) {
     return;

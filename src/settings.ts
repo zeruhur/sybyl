@@ -1,8 +1,6 @@
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import type SybylPlugin from "./main";
-import { UploadedFilesModal } from "./modals";
 import { getProvider } from "./providers";
-import { GeminiProvider } from "./providers/gemini";
 import { OllamaProvider } from "./providers/ollama";
 import { ProviderID, SybylSettings, ValidationState } from "./types";
 
@@ -123,19 +121,6 @@ export class SybylSettingTab extends PluginSettingTab {
         dropdown.onChange(async (value) => {
           config.defaultModel = value;
           await this.plugin.saveSettings();
-        });
-      });
-    new Setting(containerEl)
-      .setName("Manage Uploaded Files")
-      .addButton((button) => {
-        button.setButtonText("Open").onClick(async () => {
-          try {
-            const provider = new GeminiProvider(config);
-            const files = await provider.listSources();
-            new UploadedFilesModal(this.app, "Gemini Uploaded Files", files, () => provider.listSources(), (file) => provider.deleteSource(file)).open();
-          } catch (error) {
-            new Notice(error instanceof Error ? error.message : String(error));
-          }
         });
       });
   }

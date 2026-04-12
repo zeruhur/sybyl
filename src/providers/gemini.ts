@@ -24,14 +24,23 @@ export class GeminiProvider implements AIProvider {
       `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(this.config.apiKey)}`;
 
     const parts: Array<Record<string, unknown>> = [];
-    for (const source of request.sources) {
-      if (source.file_uri) {
+    for (const source of request.resolvedSources ?? []) {
+      if (source.ref.file_uri) {
         parts.push({
           file_data: {
-            mime_type: source.mime_type,
-            file_uri: source.file_uri
+            mime_type: source.ref.mime_type,
+            file_uri: source.ref.file_uri
           }
         });
+      } else if (source.base64Data) {
+        parts.push({
+          inlineData: {
+            mimeType: source.ref.mime_type,
+            data: source.base64Data
+          }
+        });
+      } else if (source.textContent) {
+        parts.push({ text: `[SOURCE: ${source.ref.label}]\n${source.textContent}\n[END SOURCE]` });
       }
     }
     parts.push({ text: request.userMessage });
@@ -72,106 +81,15 @@ export class GeminiProvider implements AIProvider {
     };
   }
 
-  async uploadSource(
-    fileContent: ArrayBuffer,
-    mimeType: string,
-    displayName: string
-  ): Promise<UploadedFileInfo> {
-    this.ensureConfigured();
-    if (fileContent.byteLength > 20 * 1024 * 1024) {
-      throw new Error("File too large. Gemini File API limit is 20MB.");
-    }
-
-    const startResponse = await requestUrl({
-      url: `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${encodeURIComponent(this.config.apiKey)}`,
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Upload-Protocol": "resumable",
-        "X-Goog-Upload-Command": "start",
-        "X-Goog-Upload-Header-Content-Length": String(fileContent.byteLength),
-        "X-Goog-Upload-Header-Content-Type": mimeType
-      },
-      body: JSON.stringify({ file: { display_name: displayName } }),
-      throw: false
-    });
-
-    if (startResponse.status < 200 || startResponse.status >= 300) {
-      throw new Error(this.extractError(startResponse, "Gemini"));
-    }
-
-    const uploadUrl = startResponse.headers["x-goog-upload-url"];
-    if (!uploadUrl) {
-      throw new Error("Gemini upload failed to return a resumable upload URL.");
-    }
-
-    const uploadResponse = await requestUrl({
-      url: uploadUrl,
-      method: "POST",
-      headers: {
-        "Content-Length": String(fileContent.byteLength),
-        "X-Goog-Upload-Offset": "0",
-        "X-Goog-Upload-Command": "upload, finalize"
-      },
-      body: fileContent,
-      throw: false
-    });
-
-    if (uploadResponse.status < 200 || uploadResponse.status >= 300) {
-      throw new Error(this.extractError(uploadResponse, "Gemini"));
-    }
-
-    const uploaded = uploadResponse.json;
-    const fileName = uploaded.file?.name ?? uploaded.name;
-    if (!fileName) {
-      throw new Error("Gemini upload did not return file metadata.");
-    }
-
-    const file = await this.waitForActiveFile(fileName);
-    return {
-      provider: "gemini",
-      label: displayName,
-      mime_type: mimeType,
-      file_uri: file.uri,
-      expiresAt: file.expirationTime
-    };
+  async uploadSource(): Promise<UploadedFileInfo> {
+    throw new Error("Use 'Add Source' from the note to attach a vault file inline.");
   }
 
   async listSources(): Promise<UploadedFileInfo[]> {
-    this.ensureConfigured();
-    const response = await requestUrl({
-      url: `https://generativelanguage.googleapis.com/v1beta/files?key=${encodeURIComponent(this.config.apiKey)}`,
-      throw: false
-    });
-    if (response.status < 200 || response.status >= 300) {
-      throw new Error(this.extractError(response, "Gemini"));
-    }
-    const data = response.json;
-    return (data.files ?? []).map((file: Record<string, string>) => ({
-      provider: "gemini" as const,
-      label: file.displayName ?? file.name ?? "Untitled",
-      mime_type: file.mimeType ?? "application/octet-stream",
-      file_uri: file.uri,
-      expiresAt: file.expirationTime
-    }));
+    return [];
   }
 
-  async deleteSource(ref: UploadedFileInfo): Promise<void> {
-    this.ensureConfigured();
-    if (!ref.file_uri) {
-      return;
-    }
-    const match = ref.file_uri.match(/files\/[^/?]+$/);
-    const name = ref.file_uri.startsWith("files/") ? ref.file_uri : match?.[0] ?? ref.file_uri;
-    const response = await requestUrl({
-      url: `https://generativelanguage.googleapis.com/v1beta/${name}?key=${encodeURIComponent(this.config.apiKey)}`,
-      method: "DELETE",
-      throw: false
-    });
-    if (response.status < 200 || response.status >= 300) {
-      throw new Error(this.extractError(response, "Gemini"));
-    }
-  }
+  async deleteSource(): Promise<void> {}
 
   async validate(): Promise<boolean> {
     if (!this.config.apiKey.trim()) {
@@ -192,26 +110,6 @@ export class GeminiProvider implements AIProvider {
     if (!this.config.apiKey.trim()) {
       throw new Error("No Gemini API key set. Check plugin settings.");
     }
-  }
-
-  private async waitForActiveFile(name: string): Promise<Record<string, string>> {
-    const start = Date.now();
-    while (Date.now() - start < 30_000) {
-      const response = await requestUrl({
-        url: `https://generativelanguage.googleapis.com/v1beta/${name}?key=${encodeURIComponent(this.config.apiKey)}`,
-        throw: false
-      });
-      if (response.status < 200 || response.status >= 300) {
-        throw new Error(this.extractError(response, "Gemini"));
-      }
-      const data = response.json;
-      const file = data.file ?? data;
-      if (file.state === "ACTIVE") {
-        return file;
-      }
-      await new Promise((resolve) => window.setTimeout(resolve, 2000));
-    }
-    throw new Error("Timed out waiting for Gemini file activation.");
   }
 
   private extractError(response: RequestUrlResponse, providerName: string): string {

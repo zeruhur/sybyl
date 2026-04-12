@@ -1,6 +1,6 @@
 import { App, Modal, Notice, Setting, TFile } from "obsidian";
 import { describeSourceRef, listVaultCandidateFiles } from "./sourceUtils";
-import { ModalField, SourceRef, UploadedFileInfo } from "./types";
+import { ModalField, SourceRef } from "./types";
 
 export class InputModal extends Modal {
   private readonly values: Record<string, string>;
@@ -188,58 +188,3 @@ export class ManageSourcesModal extends Modal {
   }
 }
 
-export class UploadedFilesModal extends Modal {
-  private filesState: UploadedFileInfo[];
-
-  constructor(
-    app: App,
-    private readonly title: string,
-    files: UploadedFileInfo[],
-    private readonly onRefresh: () => Promise<UploadedFileInfo[]>,
-    private readonly onDelete: (file: UploadedFileInfo) => Promise<void>
-  ) {
-    super(app);
-    this.filesState = files;
-  }
-
-  onOpen(): void {
-    this.titleEl.setText(this.title);
-    void this.render();
-  }
-
-  private async render(): Promise<void> {
-    this.contentEl.empty();
-    new Setting(this.contentEl).addButton((button) => {
-      button.setButtonText("Refresh").onClick(async () => {
-        this.filesState = await this.onRefresh();
-        await this.render();
-      });
-    });
-    if (!this.filesState.length) {
-      this.contentEl.createEl("p", { text: "No uploaded files found." });
-      return;
-    }
-    this.filesState.forEach((file) => {
-      new Setting(this.contentEl)
-        .setName(file.label)
-        .setDesc(`${file.mime_type}${file.expiresAt ? ` | Expires ${file.expiresAt}` : ""}`)
-        .addButton((button) => {
-          button.setButtonText("Copy URI").onClick(async () => {
-            await navigator.clipboard.writeText(file.file_uri ?? file.file_id ?? "");
-            new Notice("Identifier copied to clipboard.");
-          });
-        })
-        .addButton((button) => {
-          button.setButtonText("Delete").onClick(async () => {
-            await this.onDelete(file);
-            this.filesState = await this.onRefresh();
-            await this.render();
-          });
-        });
-    });
-  }
-
-  onClose(): void {
-    this.contentEl.empty();
-  }
-}

@@ -51,7 +51,7 @@ export async function resolveSourcesForRequest(
       resolved.push({ ref });
       continue;
     }
-    if (providerId === "anthropic") {
+    if (providerId === "anthropic" || (providerId === "gemini" && ref.mime_type === "application/pdf")) {
       const buffer = await readVaultBinarySource(app, ref.vault_path);
       resolved.push({ ref, base64Data: arrayBufferToBase64(buffer) });
       continue;

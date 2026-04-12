@@ -35,8 +35,8 @@ export class InputModal extends Modal {
     }
     new Setting(this.contentEl).addButton((button) => {
       button.setButtonText("Confirm").setCta().onClick(() => {
-        this.close();
         this.onSubmit(this.values);
+        this.close();
       });
     });
   }

@@ -16,14 +16,14 @@ Generate only the symbol-prefixed content lines. The formatter handles wrapping.
 `.trim();
 
 function buildBasePrompt(fm: NoteFrontMatter): string {
-  const game = fm.game ?? "the game";
-  const pcName = fm.pc_name ? `The player character is ${fm.pc_name}.` : "";
-  const pcNotes = fm.pc_notes ? `PC notes: ${fm.pc_notes}` : "";
+  const ruleset = fm.ruleset ?? "the game";
+  const pcs = fm.pcs ? `Player character: ${fm.pcs}` : "";
+  const tone = fm.tone ? `Tone: ${fm.tone}` : "";
   const language = fm.language
     ? `Respond in ${fm.language}.`
     : "Respond in the same language as the user's input.";
 
-  return `You are a tool for solo role-playing of ${game}. You are NOT a game master.
+  return `You are a tool for solo role-playing of ${ruleset}. You are NOT a game master.
 
 Your role:
 - Set the scene and offer alternatives (2-3 options maximum)
@@ -44,8 +44,8 @@ RESPONSE FORMAT:
 - Past tense for scene descriptions, present tense for world state
 - No rhetorical questions
 
-${pcName}
-${pcNotes}
+${pcs}
+${tone}
 ${language}`.trim();
 }
 

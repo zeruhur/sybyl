@@ -120,20 +120,20 @@ export function registerAllCommands(plugin: SybylPlugin): void {
         return;
       }
       const values = await openInputModal(plugin.app, "Insert Sybyl Frontmatter", [
-        { key: "game", label: "Game / system", placeholder: "Ironsworn" },
-        { key: "pc_name", label: "PC name", optional: true },
-        { key: "pc_notes", label: "PC notes", optional: true, placeholder: "Ironclad warrior, scar on left cheek" },
+        { key: "ruleset", label: "Game / ruleset", placeholder: "Ironsworn" },
+        { key: "pcs", label: "PC", optional: true, placeholder: "Kira Voss, dangerous rank, vow: recover the relic" },
+        { key: "tone", label: "Tone", optional: true, placeholder: "Gritty, hopeful" },
         { key: "language", label: "Language", optional: true, placeholder: "Leave blank for auto-detect" }
       ]);
       if (!values) {
         return;
       }
-      if (!values.game) {
-        new Notice("Game name is required.");
+      if (!values.ruleset) {
+        new Notice("Ruleset is required.");
         return;
       }
       await plugin.app.fileManager.processFrontMatter(context.view.file, (fm) => {
-        fm["game"] = values.game;
+        fm["ruleset"] = values.ruleset;
         fm["provider"] = fm["provider"] ?? plugin.settings.activeProvider;
         fm["oracle_mode"] = fm["oracle_mode"] ?? "yes-no";
         fm["lonelog"] = fm["lonelog"] ?? plugin.settings.lonelogMode;
@@ -141,8 +141,8 @@ export function registerAllCommands(plugin: SybylPlugin): void {
         fm["session_number"] = fm["session_number"] ?? 1;
         fm["game_context"] = fm["game_context"] ?? "";
         fm["scene_context"] = fm["scene_context"] ?? "";
-        if (values.pc_name) fm["pc_name"] = values.pc_name;
-        if (values.pc_notes) fm["pc_notes"] = values.pc_notes;
+        if (values.pcs) fm["pcs"] = values.pcs;
+        if (values.tone) fm["tone"] = values.tone;
         if (values.language) fm["language"] = values.language;
       });
       new Notice("Sybyl frontmatter inserted.");
@@ -175,8 +175,8 @@ export function registerAllCommands(plugin: SybylPlugin): void {
         new Notice(`Cannot read source: ${error instanceof Error ? error.message : String(error)}`);
         return;
       }
-      const game = context.fm.game ?? "the game";
-      const digestPrompt = `Distill the following source material for use in a solo tabletop RPG session of "${game}".
+      const ruleset = context.fm.ruleset ?? "the game";
+      const digestPrompt = `Distill the following source material for use in a solo tabletop RPG session of "${ruleset}".
 
 Extract and condense into a compact reference:
 - Core rules and mechanics relevant to play

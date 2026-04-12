@@ -104,12 +104,14 @@ Without frontmatter, Sybyl still works using the globally active provider, its d
 
 Run **Sybyl: Insert Note Frontmatter** on any note. It asks for a game name and optional PC details, then writes a complete frontmatter block with sensible defaults.
 
+Sybyl frontmatter aligns with the [Lonelog](https://zeruhur.itch.io/lonelog) campaign header standard where possible, so a note that is already a Lonelog campaign log needs only the Sybyl-specific fields added — not a parallel set of renamed duplicates.
+
 ### Recommended Minimal Frontmatter
 
 ```yaml
 ---
-game: "Ironsworn"
-pc_name: "Kira Voss"
+ruleset: "Ironsworn"
+pcs: "Kira Voss"
 oracle_mode: "yes-no"
 ---
 ```
@@ -118,9 +120,9 @@ oracle_mode: "yes-no"
 
 ```yaml
 ---
-game: "Ironsworn"
-pc_name: "Kira Voss"
-pc_notes: "Dangerous rank. Vow: recover the relic."
+ruleset: "Ironsworn"
+pcs: "Kira Voss, dangerous rank, vow: recover the relic"
+tone: "Gritty, hopeful"
 oracle_mode: "yes-no"
 language: "en"
 provider: "gemini"
@@ -135,13 +137,17 @@ scene_context: ""
 
 ```yaml
 ---
-# Strongly recommended. Used in the base system prompt.
-game: "Ironsworn"
+# ── Lonelog standard fields ──────────────────────────────────────
+# Game system or ruleset. Used in the base system prompt.
+ruleset: "Ironsworn"
 
-# Optional PC identity fields.
-pc_name: "Kira Voss"
-pc_notes: "Dangerous rank. Vow: recover the relic."
+# Player character(s). Name, rank, vows, traits — anything relevant.
+pcs: "Kira Voss, dangerous rank, vow: recover the relic"
 
+# Creative tone. Injected into the system prompt.
+tone: "Gritty, hopeful"
+
+# ── Sybyl-specific fields ─────────────────────────────────────────
 # Optional oracle mode hint used by Ask Oracle.
 # Supported values: "yes-no", "fate", "custom"
 oracle_mode: "yes-no"
@@ -194,21 +200,19 @@ session_number: 1
 
 ### Frontmatter Fields Explained
 
-#### `game`
+#### `ruleset` *(Lonelog standard)*
 
-The most important field. Tells Sybyl what game it is assisting with. Injected into the base system prompt.
+The game system or ruleset being played. Injected into the base system prompt.
 
 If omitted, Sybyl falls back to a generic phrase like `the game`.
 
-#### `pc_name`
+#### `pcs` *(Lonelog standard)*
 
-Adds the player character name to the system prompt. Helps the model avoid ambiguous references.
+Player character description. Name, rank, vows, key traits, injuries — anything that should ground the AI's responses. Keep it concise; it is included in every request.
 
-#### `pc_notes`
+#### `tone` *(Lonelog standard)*
 
-Adds a short description of the PC to the prompt. Keep it concise — it is included in every request.
-
-Useful for: rank or playbook, active vows, key traits, injuries, important relationships.
+Creative and genre tone. Injected into the system prompt. Examples: `"Gritty, hopeful"`, `"Eerie but playful"`, `"Low fantasy, grounded"`.
 
 #### `oracle_mode`
 
@@ -268,7 +272,7 @@ Managed automatically by Lonelog commands.
 
 | Field | Hand-edit? |
 |---|---|
-| `game`, `pc_name`, `pc_notes` | Yes |
+| `ruleset`, `pcs`, `tone` | Yes |
 | `oracle_mode`, `language` | Yes |
 | `provider`, `model`, `temperature` | Yes |
 | `lonelog` | Yes |

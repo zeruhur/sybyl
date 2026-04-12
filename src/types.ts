@@ -51,7 +51,11 @@ export interface SourceRef {
 }
 
 export interface NoteFrontMatter {
-  game?: string;
+  // Lonelog standard fields
+  ruleset?: string;
+  pcs?: string;
+  tone?: string;
+  // Sybyl-specific fields
   system_prompt_override?: string;
   provider?: ProviderID;
   model?: string;
@@ -59,8 +63,6 @@ export interface NoteFrontMatter {
   sources?: SourceRef[];
   game_context?: string;
   scene_context?: string;
-  pc_name?: string;
-  pc_notes?: string;
   oracle_mode?: OracleMode;
   language?: string;
   lonelog?: boolean;

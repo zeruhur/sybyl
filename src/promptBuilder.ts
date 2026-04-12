@@ -1,7 +1,5 @@
-import { App } from "obsidian";
 import { parseLonelogContext, serializeContext } from "./lonelog/parser";
-import { resolveSourcesForRequest } from "./sourceUtils";
-import { GenerationRequest, NoteFrontMatter, ProviderID, SybylSettings } from "./types";
+import { GenerationRequest, NoteFrontMatter, SybylSettings } from "./types";
 
 const LONELOG_SYSTEM_ADDENDUM = `
 LONELOG NOTATION MODE IS ACTIVE.
@@ -53,19 +51,20 @@ ${language}`.trim();
 
 export function buildSystemPrompt(fm: NoteFrontMatter, lonelogMode: boolean): string {
   const base = fm.system_prompt_override?.trim() || buildBasePrompt(fm);
-  return lonelogMode ? `${base}\n\n${LONELOG_SYSTEM_ADDENDUM}` : base;
+  let prompt = lonelogMode ? `${base}\n\n${LONELOG_SYSTEM_ADDENDUM}` : base;
+  if (fm.game_context?.trim()) {
+    prompt = `${prompt}\n\nGAME CONTEXT:\n${fm.game_context.trim()}`;
+  }
+  return prompt;
 }
 
-export async function buildRequest(
-  app: App,
+export function buildRequest(
   fm: NoteFrontMatter,
   userMessage: string,
   settings: SybylSettings,
   maxOutputTokens = 512,
   noteBody?: string
-): Promise<GenerationRequest> {
-  const provider = (fm.provider ?? settings.activeProvider) as ProviderID;
-  const sources = (fm.sources ?? []).filter((source) => source.provider === provider);
+): GenerationRequest {
   const lonelogActive = fm.lonelog ?? settings.lonelogMode;
 
   let contextBlock = "";
@@ -81,10 +80,9 @@ export async function buildRequest(
   return {
     systemPrompt: buildSystemPrompt(fm, lonelogActive),
     userMessage: contextMessage,
-    sources,
     temperature: fm.temperature ?? settings.defaultTemperature,
     maxOutputTokens,
     model: fm.model,
-    resolvedSources: await resolveSourcesForRequest(app, sources, provider)
+    resolvedSources: []
   };
 }

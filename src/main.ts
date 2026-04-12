@@ -1,11 +1,11 @@
 import { MarkdownView, Notice, Plugin } from "obsidian";
 import { appendToNote, insertAtCursor } from "./editor";
-import { buildRequest } from "./promptBuilder";
+import { buildRequest, buildSystemPrompt } from "./promptBuilder";
 import { readFrontMatter } from "./frontmatter";
 import { getProvider } from "./providers";
 import { registerAllCommands } from "./commands";
 import { DEFAULT_SETTINGS, SybylSettingTab, normalizeSettings } from "./settings";
-import { GenerationResponse, NoteFrontMatter, SybylSettings } from "./types";
+import { GenerationRequest, GenerationResponse, NoteFrontMatter, ResolvedSource, SybylSettings } from "./types";
 
 export interface ActiveNoteContext {
   view: MarkdownView;
@@ -50,7 +50,30 @@ export default class SybylPlugin extends Plugin {
     maxOutputTokens = 512
   ): Promise<GenerationResponse> {
     const provider = getProvider(this.settings, fm.provider);
-    const request = await buildRequest(this.app, fm, userMessage, this.settings, maxOutputTokens, noteBody);
+    const request = buildRequest(fm, userMessage, this.settings, maxOutputTokens, noteBody);
+    const progress = new Notice("Sybyl: Generating...", 0);
+    try {
+      return await provider.generate(request);
+    } finally {
+      progress.hide();
+    }
+  }
+
+  async requestRawGeneration(
+    fm: NoteFrontMatter,
+    userMessage: string,
+    maxOutputTokens: number,
+    resolvedSources: ResolvedSource[] = []
+  ): Promise<GenerationResponse> {
+    const provider = getProvider(this.settings, fm.provider);
+    const request: GenerationRequest = {
+      systemPrompt: buildSystemPrompt(fm, false),
+      userMessage,
+      resolvedSources,
+      temperature: fm.temperature ?? this.settings.defaultTemperature,
+      maxOutputTokens,
+      model: fm.model
+    };
     const progress = new Notice("Sybyl: Generating...", 0);
     try {
       return await provider.generate(request);

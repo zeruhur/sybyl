@@ -14,6 +14,7 @@ import {
 import { parseLonelogContext, serializeContext } from "./lonelog/parser";
 import { ManageSourcesModal, openInputModal, pickVaultFile } from "./modals";
 import { getProvider } from "./providers";
+import { resolveSourcesForRequest } from "./sourceUtils";
 import { NoteFrontMatter, SourceRef, SybylSettings, UploadedFileInfo } from "./types";
 
 function isLonelogActive(settings: SybylSettings, fm: NoteFrontMatter): boolean {
@@ -138,11 +139,66 @@ export function registerAllCommands(plugin: SybylPlugin): void {
         fm["lonelog"] = fm["lonelog"] ?? plugin.settings.lonelogMode;
         fm["scene_counter"] = fm["scene_counter"] ?? 1;
         fm["session_number"] = fm["session_number"] ?? 1;
+        fm["game_context"] = fm["game_context"] ?? "";
+        fm["scene_context"] = fm["scene_context"] ?? "";
         if (values.pc_name) fm["pc_name"] = values.pc_name;
         if (values.pc_notes) fm["pc_notes"] = values.pc_notes;
         if (values.language) fm["language"] = values.language;
       });
       new Notice("Sybyl frontmatter inserted.");
+    }
+  });
+
+  plugin.addCommand({
+    id: "sybyl:digest-source",
+    name: "Digest Source into Game Context",
+    callback: async () => {
+      const context = await plugin.getActiveNoteContext();
+      if (!context?.view.file) {
+        return;
+      }
+      const vaultFile = await pickVaultFile(plugin.app, "Choose a source file to digest");
+      if (!vaultFile) {
+        return;
+      }
+      const providerId = context.fm.provider ?? plugin.settings.activeProvider;
+      const ref: SourceRef = {
+        label: vaultFile.basename,
+        provider: providerId,
+        mime_type: inferMimeType(vaultFile),
+        vault_path: vaultFile.path
+      };
+      let resolvedSources;
+      try {
+        resolvedSources = await resolveSourcesForRequest(plugin.app, [ref], providerId);
+      } catch (error) {
+        new Notice(`Cannot read source: ${error instanceof Error ? error.message : String(error)}`);
+        return;
+      }
+      const game = context.fm.game ?? "the game";
+      const digestPrompt = `Distill the following source material for use in a solo tabletop RPG session of "${game}".
+
+Extract and condense into a compact reference:
+- Core rules and mechanics relevant to play
+- Key factions, locations, characters, and world facts
+- Tone, genre, and setting conventions
+- Any tables, move lists, or random generators
+
+Be concise and specific. Preserve game-mechanical details. Omit flavor prose and examples.`;
+      try {
+        const response = await plugin.requestRawGeneration(
+          context.fm,
+          digestPrompt,
+          2000,
+          resolvedSources
+        );
+        await plugin.app.fileManager.processFrontMatter(context.view.file, (fm) => {
+          fm["game_context"] = response.text;
+        });
+        new Notice("Game context updated.");
+      } catch (error) {
+        new Notice(`Sybyl error: ${error instanceof Error ? error.message : String(error)}`);
+      }
     }
   });
 

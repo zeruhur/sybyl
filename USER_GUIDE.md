@@ -1,10 +1,14 @@
 # Sybyl User Guide
 
-Sybyl is an Obsidian plugin for solo tabletop play. It can help start scenes, interpret oracle results, suggest consequences, and format output in either a generic inline style or Lonelog notation.
+Sybyl is an Obsidian plugin for solo tabletop play. It helps start scenes, interpret oracle results, suggest consequences, and format output in either a generic inline style or Lonelog notation.
+
+For full details see [USER_GUIDE.md](USER_GUIDE.md). The sections below cover installation, setup, and reference.
+
+---
 
 ## What Sybyl Does
 
-Sybyl works inside the active markdown note.
+Sybyl works inside the active markdown note. Each request is stateless. There is no persistent chat thread.
 
 It can:
 
@@ -13,15 +17,18 @@ It can:
 - interpret oracle answers
 - suggest complications
 - expand a scene into prose
-- attach source documents to a note
+- distill source documents into a compact `game_context` block stored in frontmatter
 - parse Lonelog notes into compact AI context
 
-It does not maintain a chat thread. Each request is stateless and uses:
+Each request is built from:
 
-- the note frontmatter
-- optional attached sources
-- optional `scene_context`
-- optional Lonelog parsing of the current note body
+- the note frontmatter (`game`, `pc_name`, `game_context`, `scene_context`, etc.)
+- the current scene context (from `scene_context` or Lonelog parsing)
+- the command-specific prompt
+
+Source files are **not** injected into every request. They are used once via the **Digest Source into Game Context** command, which distils them into `game_context` and stores the result in frontmatter.
+
+---
 
 ## Installation
 
@@ -50,17 +57,13 @@ Target folder example:
 
 ### BRAT
 
-If the GitHub repo has a release with these assets:
+If the GitHub repo has a release with `main.js`, `manifest.json`, and `versions.json`, BRAT can install it directly from the repository URL.
 
-- `main.js`
-- `manifest.json`
-- `versions.json`
-
-then BRAT can install it from the repository.
+---
 
 ## First-Time Setup
 
-Open `Settings -> Sybyl`.
+Open **Settings → Sybyl**.
 
 ### 1. Pick an Active Provider
 
@@ -68,65 +71,50 @@ Choose one of:
 
 - Gemini
 - OpenAI
-- Anthropic
+- Anthropic (Claude)
 - Ollama
 
 This is the default provider unless a note overrides it in frontmatter.
 
 ### 2. Configure the Provider
 
-Set the relevant credentials:
-
-- Gemini: API key
-- OpenAI: API key and optional base URL
-- Anthropic: API key
-- Ollama: base URL only
+| Provider  | Required           |
+|-----------|--------------------|
+| Gemini    | API key            |
+| OpenAI    | API key            |
+| Anthropic | API key            |
+| Ollama    | Base URL           |
 
 ### 3. Set Global Behavior
 
-You can configure:
+- **Default temperature** — affects all generation unless overridden per note
+- **Insertion mode** — at cursor or end of note
+- **Show token count** — appends a HTML comment with token usage after each response
+- **Lonelog mode** — global toggle; can also be set per note in frontmatter
 
-- default temperature
-- insertion mode
-- token comment logging
-- Lonelog mode
+---
 
 ## YAML Frontmatter
 
-Frontmatter is not strictly required for the plugin to run, because Sybyl can fall back to plugin settings and a generic prompt. But in practice, frontmatter is the main control surface for note-specific behavior, so you should treat it as the normal way to use the plugin.
+Frontmatter is not strictly required, but it is the primary control surface for note-specific behavior and should be treated as the normal way to use the plugin.
 
-Without frontmatter, Sybyl can still:
+Without frontmatter, Sybyl still works using the globally active provider, its default model, and a generic prompt.
 
-- use the globally active provider
-- use the provider default model from plugin settings
-- generate based only on the immediate command prompt
+### Quick Setup
 
-With frontmatter, Sybyl can:
-
-- know which game is being played
-- know the PC name and notes
-- override provider and model per note
-- store sources attached to that note
-- keep or override scene context
-- enable Lonelog mode per note
-- manage scene and session counters for Lonelog notes
+Run **Sybyl: Insert Note Frontmatter** on any note. It asks for a game name and optional PC details, then writes a complete frontmatter block with sensible defaults.
 
 ### Recommended Minimal Frontmatter
-
-This is the smallest useful setup for normal play:
 
 ```yaml
 ---
 game: "Ironsworn"
 pc_name: "Kira Voss"
 oracle_mode: "yes-no"
-language: "en"
 ---
 ```
 
 ### Recommended Expanded Frontmatter
-
-This is a good starting point if you want note-level control:
 
 ```yaml
 ---
@@ -136,17 +124,14 @@ pc_notes: "Dangerous rank. Vow: recover the relic."
 oracle_mode: "yes-no"
 language: "en"
 provider: "gemini"
-model: "gemini-3.1-pro-preview"
+model: "gemini-2.5-flash"
 temperature: 0.7
-system_prompt_override: ""
+game_context: ""
 scene_context: ""
-sources: []
 ---
 ```
 
 ### Full Frontmatter Reference
-
-All currently supported frontmatter keys are shown below.
 
 ```yaml
 ---
@@ -162,7 +147,7 @@ pc_notes: "Dangerous rank. Vow: recover the relic."
 oracle_mode: "yes-no"
 
 # Optional language instruction.
-# Example values: "en", "it"
+# If omitted, Sybyl responds in the same language as the input.
 language: "en"
 
 # Optional per-note provider override.
@@ -170,39 +155,38 @@ language: "en"
 provider: "gemini"
 
 # Optional per-note model override.
-# This should be a valid model ID for the selected provider.
-model: "gemini-3.1-pro-preview"
+model: "gemini-2.5-flash"
 
 # Optional per-note temperature override.
 temperature: 0.7
 
 # Optional full replacement for the built-in system prompt.
-# If set, this overrides the default Sybyl prompt logic.
+# If set, this bypasses all default Sybyl prompt logic.
 system_prompt_override: ""
 
-# Optional explicit context block.
-# If non-empty, this takes precedence over Lonelog auto-parsing.
+# Static game rules and world facts, distilled from source material.
+# Populated by the "Digest Source into Game Context" command.
+# Injected into the system prompt on every request.
+game_context: ""
+
+# Dynamic scene state — the current situation in play.
+# If non-empty, takes precedence over Lonelog auto-parsing.
+# Updated by "Update Scene Context from Log" or edited manually.
 scene_context: ""
 
 # Optional note-specific source list.
-# Managed mainly through plugin commands, not by hand.
+# Managed through plugin commands, not by hand.
+# Used as input for "Digest Source into Game Context".
 sources:
-  - label: "Ironsworn Rulebook"
-    provider: "gemini"
-    mime_type: "application/pdf"
-    file_uri: "files/abc123"
-    expiresAt: "2026-04-14T10:00:00Z"
-
   - label: "Oracle Tables"
-    provider: "openai"
+    provider: "gemini"
     mime_type: "text/plain"
-    vault_path: "rpg/oracles/ironsworn-oracles.txt"
+    vault_path: "rpg/ironsworn/oracles.txt"
 
 # Optional Lonelog override for this note.
 lonelog: false
 
-# Optional Lonelog counters.
-# Mainly managed by commands, not by hand.
+# Lonelog counters. Managed automatically by commands.
 scene_counter: 1
 session_number: 1
 ---
@@ -212,440 +196,250 @@ session_number: 1
 
 #### `game`
 
-This is the most important field for normal play. It tells Sybyl what game it is assisting with and is injected into the base prompt.
+The most important field. Tells Sybyl what game it is assisting with. Injected into the base system prompt.
 
-If omitted, Sybyl falls back to a generic phrase like `the game`, which works but is less useful.
+If omitted, Sybyl falls back to a generic phrase like `the game`.
 
 #### `pc_name`
 
-Adds the player character name to the system prompt.
-
-This helps the model avoid ambiguous references and makes scene interpretation more grounded.
+Adds the player character name to the system prompt. Helps the model avoid ambiguous references.
 
 #### `pc_notes`
 
-Adds a short description of the PC to the prompt.
+Adds a short description of the PC to the prompt. Keep it concise — it is included in every request.
 
-Use this for:
-
-- rank or playbook
-- vows
-- key traits
-- current injuries or conditions
-- important relationships
-
-Keep it short. This is part of the repeated prompt context.
+Useful for: rank or playbook, active vows, key traits, injuries, important relationships.
 
 #### `oracle_mode`
 
-Used by the `Ask Oracle` command when you leave the oracle result blank.
+Used by Ask Oracle when the oracle result field is left blank.
 
-Supported values:
-
-- `yes-no`
-- `fate`
-- `custom`
-
-This is a hint to the model about how to frame the answer.
+Supported values: `yes-no`, `fate`, `custom`.
 
 #### `language`
 
-Tells Sybyl which language to answer in.
-
-If omitted, the plugin prompt instructs the model to respond in the same language as the user input.
+Language instruction for model responses. If omitted, the model responds in the same language as the input.
 
 #### `provider`
 
-Overrides the plugin-wide active provider for this specific note.
+Overrides the plugin-wide active provider for this note.
 
-Supported values:
-
-- `gemini`
-- `openai`
-- `anthropic`
-- `ollama`
-
-Use this when different campaign notes should use different providers.
+Supported values: `gemini`, `openai`, `anthropic`, `ollama`.
 
 #### `model`
 
-Overrides the provider default model for this note.
-
-Examples:
-
-- `gemini-3.1-pro-preview`
-- `gpt-5.2`
-- `claude-sonnet-4-6`
-- `gemma3`
-
-The plugin does not validate this in frontmatter before the request is sent, so the model string must match a real model available for that provider.
+Overrides the provider default model for this note. Must be a valid model ID for the selected provider.
 
 #### `temperature`
 
-Overrides the global temperature for this note.
-
-Typical values:
-
-- `0.2` for tighter, more deterministic phrasing
-- `0.7` for balanced output
-- `0.9` for looser variation
-
-Use conservative values for oracle interpretation and consequence generation.
+Overrides the global temperature for this note. Typical range: 0.2 (tight) to 0.9 (loose).
 
 #### `system_prompt_override`
 
-Completely replaces the built-in Sybyl system prompt.
+Completely replaces the built-in Sybyl system prompt. Use only when you want deliberate custom behavior for a specific note.
 
-This is powerful and risky. If you set it, you are bypassing the plugin’s normal guardrails and behavior instructions.
+#### `game_context`
 
-Use this only if you want deliberate custom behavior for a specific note.
+Static knowledge about the game world and rules. Populated once by **Digest Source into Game Context** and injected into the system prompt on every request.
+
+This replaces the old per-request source injection. Instead of sending a source file with every command, you distil it once and reuse the compact result.
 
 #### `scene_context`
 
-Stores a compact running summary of the current situation.
+The current scene state. If non-empty, this takes precedence over Lonelog auto-parsing.
 
-This is useful when:
-
-- you are not using Lonelog mode
-- you want stable manual context
-- you want to freeze context instead of relying on note-body parsing
-
-If this field is non-empty, it takes precedence over Lonelog parsing.
+Updated by **Update Scene Context from Log**, or edited manually.
 
 #### `sources`
 
-This is the list of source files attached to the current note.
+The list of source files attached to the current note. Managed by **Add Source File** and **Manage Sources**. Used as input to **Digest Source into Game Context**.
 
-You usually should not edit this by hand. The plugin commands manage it for you.
-
-Each entry is provider-specific:
-
-- Gemini typically stores `file_uri`
-- OpenAI typically stores `vault_path`
-- Anthropic typically stores `vault_path`
-- Ollama typically stores `vault_path`
-
-Common fields:
-
-- `label`
-- `provider`
-- `mime_type`
-
-Possible provider-specific fields:
-
-- `file_uri`
-- `file_id`
-- `vault_path`
-- `expiresAt`
+Sources are no longer injected directly into every request. Run the digest command to convert a source into `game_context`.
 
 #### `lonelog`
 
-Enables or disables Lonelog mode for this specific note.
+Enables or disables Lonelog mode for this note, overriding the global setting.
 
-This overrides the global plugin setting.
+#### `scene_counter` / `session_number`
 
-If omitted, the plugin uses the global Lonelog toggle from settings.
-
-#### `scene_counter`
-
-Used by Lonelog scene commands.
-
-The plugin increments this automatically when you use `Sybyl: New Scene` or Lonelog-aware scene start flows, if auto-increment is enabled.
-
-#### `session_number`
-
-Used by the Lonelog session header command.
-
-The plugin increments this automatically when you create a new session header.
-
-### Normal Note Example
-
-```yaml
----
-game: "Ironsworn"
-pc_name: "Kira Voss"
-pc_notes: "Dangerous rank. Vow: recover the relic."
-oracle_mode: "yes-no"
-language: "en"
-provider: "anthropic"
-model: "claude-sonnet-4-6"
-temperature: 0.6
-scene_context: |
-  Kira crossed the old pass at dusk.
-  Two armed strangers were seen near the bridge.
-  One carried a red pennant tied to a spear.
-sources:
-  - label: "Oracle Tables"
-    provider: "anthropic"
-    mime_type: "text/plain"
-    vault_path: "rpg/ironsworn/oracles.txt"
----
-```
-
-### Lonelog Note Example
-
-```yaml
----
-game: "Ironsworn"
-pc_name: "Kira Voss"
-oracle_mode: "yes-no"
-language: "en"
-provider: "gemini"
-model: "gemini-3.1-pro-preview"
-temperature: 0.7
-lonelog: true
-scene_counter: 3
-session_number: 2
-scene_context: ""
-sources:
-  - label: "Ironsworn Rulebook"
-    provider: "gemini"
-    mime_type: "application/pdf"
-    file_uri: "files/abc123"
-    expiresAt: "2026-04-14T10:00:00Z"
----
-```
+Managed automatically by Lonelog commands.
 
 ### Should You Edit Frontmatter By Hand?
 
-Yes for:
+| Field | Hand-edit? |
+|---|---|
+| `game`, `pc_name`, `pc_notes` | Yes |
+| `oracle_mode`, `language` | Yes |
+| `provider`, `model`, `temperature` | Yes |
+| `lonelog` | Yes |
+| `scene_context` | Yes, or via command |
+| `game_context` | Only to clear or correct it |
+| `sources` | Prefer commands |
+| `scene_counter`, `session_number` | Prefer commands |
+| `system_prompt_override` | Only if you know what you're doing |
 
-- `game`
-- `pc_name`
-- `pc_notes`
-- `oracle_mode`
-- `language`
-- `provider`
-- `model`
-- `temperature`
-- `lonelog`
-
-Usually no for:
-
-- `sources`
-- `scene_counter`
-- `session_number`
-
-Only if you know what you are doing for:
-
-- `system_prompt_override`
-- large manual `scene_context`
+---
 
 ## Commands
 
-### Sybyl: Start Scene
+All commands appear in the Obsidian command palette as **Sybyl: \<name\>**.
 
-Creates a short scene opening.
+### Insert Note Frontmatter
+
+Asks for a game name and optional PC details, then writes a complete frontmatter block to the active note.
+
+Safe to run on notes that already have partial frontmatter — existing values are not overwritten.
+
+### Digest Source into Game Context
+
+Picks a vault file, reads it, and sends it to the AI with a digest prompt tailored to the current game. The condensed result is stored in `game_context` in the note frontmatter.
+
+Run this once at session setup. The `game_context` is then included in every subsequent request automatically, with no per-request file overhead.
+
+Supported file types depend on the active provider:
+
+- Text and Markdown: all providers
+- PDF: Gemini and Anthropic only
+
+### Start Scene
+
+Generates a short scene opening.
 
 - Normal mode: inserts a blockquote-style scene line
 - Lonelog mode: asks for a scene description and inserts a scene header plus prose
 
-### Sybyl: Declare Action
+### Declare Action
 
-Prompts for:
+Prompts for an action and a roll result. Returns consequences and world reaction only. The PC's action is never described by the model.
 
-- action
-- roll result
+### Ask Oracle
 
-Sybyl returns consequences and world reaction only.
+Prompts for a question and an optional oracle result.
 
-### Sybyl: Ask Oracle
+- With a result: interprets it in context
+- Without a result: generates an answer and interpretation based on `oracle_mode`
 
-Prompts for:
+### Interpret Oracle Result
 
-- question
-- optional oracle result
+Uses the current editor selection if available. If nothing is selected, asks for oracle text.
 
-If you provide a result, Sybyl interprets it.
+Inserts the interpretation below the selection.
 
-If you leave it blank, Sybyl generates an answer and interpretation.
+### Suggest Consequence
 
-### Sybyl: Interpret Oracle Result
+Generates 1–2 neutral complications or consequences based on the current context.
 
-Uses the current selection if available.
+### Expand Scene into Prose
 
-If nothing is selected, it asks for oracle text.
+Generates a 100–150 word prose passage from the current context. Third person, past tense, no dialogue.
 
-### Sybyl: Suggest Consequence
+### Add Source File
 
-Generates 1 or 2 neutral complications or consequences.
+Picks a vault file and attaches it to the current note's `sources` list. All providers use vault path references.
 
-### Sybyl: Expand Scene into Prose
+Attached sources are used as input for **Digest Source into Game Context**, not injected into generation directly.
 
-Generates a longer prose passage from the current context.
+### Manage Sources
 
-### Sybyl: Upload Source File
-
-Attaches a source to the current note.
-
-Behavior depends on provider:
-
-- Gemini: uploads the file to Gemini and stores the returned `file_uri` in note frontmatter
-- OpenAI: stores a `vault_path` reference to a vault file
-- Anthropic: stores a `vault_path` reference to a vault file
-- Ollama: stores a `vault_path` reference to a vault file
-
-### Sybyl: Manage Sources
-
-Manages the `sources` attached to the current note.
-
-You can:
+Lists sources attached to the current note. You can:
 
 - remove a source from the note
-- delete an uploaded Gemini source from the provider
 - add a new source
 
-This is the command you use for note-level source management.
+### New Scene *(Lonelog only)*
 
-## Important Source Management Distinction
+Uses `scene_counter`. Inserts a Lonelog scene header and generated prose. Increments the counter if auto-increment is enabled in settings.
 
-This is the part that is easiest to misunderstand.
+### Update Scene Context from Log *(Lonelog only)*
 
-### `Manage Uploaded Files` in Settings
+Parses the current note body and writes a compact summary into `scene_context`. Does not call the AI.
 
-This exists only under the Gemini provider settings.
+### New Session Header *(Lonelog only)*
 
-It shows the Gemini files already uploaded under your API key. It is provider-level inventory, not note-level attachment.
+Inserts a formatted session header block and increments `session_number`.
 
-You use it to:
-
-- view Gemini uploads
-- copy a Gemini file URI
-- delete a Gemini upload from the provider
-
-You do not use it to attach a source to the current note.
-
-### `Sybyl: Upload Source File`
-
-This is how you attach a source to the active note.
-
-### `Sybyl: Manage Sources`
-
-This is how you manage sources already attached to the active note.
-
-## Lonelog Mode
-
-Enable Lonelog mode in settings, or set it per note in frontmatter:
-
-```yaml
 ---
-lonelog: true
-scene_counter: 1
-session_number: 1
-scene_context: ""
----
-```
-
-When Lonelog mode is active:
-
-- command outputs use Lonelog formatting
-- the note body can be parsed automatically for context
-- Lonelog-specific commands are enabled
-
-### Lonelog Commands
-
-#### Sybyl: New Scene
-
-- uses `scene_counter`
-- inserts a Lonelog scene header and prose
-- increments the scene counter if auto-increment is enabled
-
-#### Sybyl: Update Scene Context from Log
-
-- parses the current note
-- writes the parsed summary into `scene_context`
-- does not call the AI
-
-#### Sybyl: New Session Header
-
-- inserts a session header block
-- increments `session_number`
 
 ## How Context Works
 
-Sybyl resolves context in this order:
+Sybyl assembles each request from three layers:
 
-1. explicit `scene_context` in frontmatter, if non-empty
-2. Lonelog parsing of the current note body, if Lonelog mode is active
-3. only the direct command prompt, if neither of the above is available
+| Layer | Source | When active |
+|---|---|---|
+| System prompt | `game`, `pc_name`, `pc_notes`, `game_context` | Always |
+| Scene context | `scene_context` or Lonelog parsing | If either is available |
+| Command prompt | The specific command | Always |
 
-This means you do not have to maintain `scene_context` manually when using Lonelog unless you want to.
+**`game_context`** is injected into the system prompt. It is static — set it once with the digest command and it applies to every request without extra token cost.
+
+**`scene_context`** is prepended to the user message. If non-empty, it takes precedence over Lonelog parsing. If empty and Lonelog mode is active, the current note body is parsed automatically.
+
+If neither is available, Sybyl generates from the command prompt alone.
+
+---
 
 ## Provider Notes
 
 ### Gemini
 
-- supports direct file upload
-- uploaded files expire on the provider side
-- best option if you want provider-managed file references
+- Uses `requestUrl` (Obsidian's network API) — works correctly inside the desktop app
+- Supports inline PDF via `inlineData` when used with the digest command
+- No persistent file upload — sources are read from vault at digest time
 
 ### OpenAI
 
-- uses `vault_path` sources
-- reads source text from vault files at request time
-- best to use `.txt` sources for predictable results
+- Text files and Markdown only for sources
+- Source content is read from vault at digest time
 
 ### Anthropic
 
-- uses `vault_path` sources
-- PDFs are encoded inline per request
-- smaller excerpts are better
+- Supports inline PDF at digest time
+- Source content encoded as base64 in the digest request only
 
 ### Ollama
 
-- local only
-- uses `vault_path` sources
-- plain text files are the safest source format
+- Local only, no API key required
+- Text files and Markdown only
+
+---
 
 ## Recommended Workflow
 
-For a normal note:
+### Normal Note
 
-1. create a note with minimal frontmatter
-2. set provider and model if needed
-3. optionally attach sources with `Sybyl: Upload Source File`
-4. use `Start Scene`, `Declare Action`, `Ask Oracle`, and `Suggest Consequence`
+1. Run **Insert Note Frontmatter** and fill in game and PC details
+2. If you have source material, run **Add Source File** then **Digest Source into Game Context**
+3. Use **Start Scene**, **Declare Action**, **Ask Oracle**, **Suggest Consequence** during play
+4. Update `scene_context` manually or via **Update Scene Context from Log** as needed
 
-For a Lonelog note:
+### Lonelog Note
 
-1. enable `lonelog: true`
-2. use `Sybyl: New Scene`
-3. log play in Lonelog notation
-4. use `Sybyl: Update Scene Context from Log` if you want a frozen context snapshot
-5. continue using Sybyl commands inside the same note
+1. Run **Insert Note Frontmatter** and enable `lonelog: true`
+2. Optionally digest source material into `game_context`
+3. Use **New Scene** to start each scene
+4. Log play in Lonelog notation
+5. Use **Update Scene Context from Log** to snapshot the current state
+6. Use **New Session Header** at the start of each session
+
+---
 
 ## Troubleshooting
 
 ### No response or provider error
 
-Check:
+- Check API key or base URL in settings
+- Confirm the selected model exists for that provider
+- Check that the per-note `provider` override is what you intended
 
-- API key or base URL
-- provider is reachable
-- per-note `provider` override is not pointing at a different provider than expected
-- selected model exists for that provider
+### Digest command fails on a PDF
 
-### Source file does not help the model
-
-Check:
-
-- the source is attached to the current note
-- the source provider matches the note provider
-- the source format is suitable for that provider
+- Gemini and Anthropic support PDF inline; OpenAI and Ollama do not
+- For OpenAI and Ollama, convert the relevant sections to a `.txt` or `.md` file
 
 ### Lonelog commands say Lonelog is not enabled
 
-Either:
+Enable Lonelog globally in settings, or set `lonelog: true` in the note frontmatter.
 
-- enable Lonelog globally in settings
+### `game_context` is stale
 
-or:
-
-- set `lonelog: true` in the current note frontmatter
-
-## Files Most Users May Want to Inspect
-
-- [README.md](C:/Users/utente/Documents/GitHub/sybyl/README.md)
-- [manifest.json](C:/Users/utente/Documents/GitHub/sybyl/manifest.json)
-- [settings.ts](C:/Users/utente/Documents/GitHub/sybyl/src/settings.ts)
-- [commands.ts](C:/Users/utente/Documents/GitHub/sybyl/src/commands.ts)
+Re-run **Digest Source into Game Context** on the same or an updated source file. The command overwrites the existing value.

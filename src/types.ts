@@ -57,6 +57,7 @@ export interface NoteFrontMatter {
   model?: string;
   temperature?: number;
   sources?: SourceRef[];
+  game_context?: string;
   scene_context?: string;
   pc_name?: string;
   pc_notes?: string;
@@ -76,11 +77,10 @@ export interface ResolvedSource {
 export interface GenerationRequest {
   systemPrompt: string;
   userMessage: string;
-  sources: SourceRef[];
   temperature: number;
   maxOutputTokens: number;
   model?: string;
-  resolvedSources?: ResolvedSource[];
+  resolvedSources: ResolvedSource[];
 }
 
 export interface GenerationResponse {

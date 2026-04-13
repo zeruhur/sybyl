@@ -2,7 +2,9 @@
 
 Sybyl is an Obsidian plugin for solo tabletop play with provider-backed AI assistance and Lonelog-aware note formatting.
 
-For usage, commands, frontmatter reference, and workflows see **[USER_GUIDE.md](USER_GUIDE.md)**.
+**New to Sybyl?** Start with the **[Tutorial](TUTORIAL.md)** — a step-by-step walkthrough from installation to your first scene.
+
+For a complete reference of every command, frontmatter field, and provider option see **[USER_GUIDE.md](USER_GUIDE.md)**.
 
 ## Supported Providers
 

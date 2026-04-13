@@ -2,7 +2,7 @@
 
 Sybyl is an Obsidian plugin for solo tabletop play. It helps start scenes, interpret oracle results, suggest consequences, and format output in either a generic inline style or Lonelog notation.
 
-For full details see [USER_GUIDE.md](USER_GUIDE.md). The sections below cover installation, setup, and reference.
+If you are new to Sybyl, read the **[Tutorial](TUTORIAL.md)** first — it walks through installation, setup, and a complete first session with worked examples. This document is a reference for when you need to look something specific up.
 
 ---
 
@@ -41,7 +41,7 @@ npm ci
 npm run build
 ```
 
-2. Copy these files into your vault plugin folder:
+1. Copy these files into your vault plugin folder:
 
 - `main.js`
 - `manifest.json`
@@ -53,7 +53,7 @@ Target folder example:
 .obsidian/plugins/sybyl/
 ```
 
-3. Enable the plugin in Obsidian.
+1. Enable the plugin in Obsidian.
 
 ### BRAT
 

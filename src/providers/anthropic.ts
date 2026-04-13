@@ -86,6 +86,27 @@ export class AnthropicProvider implements AIProvider {
 
   async deleteSource(): Promise<void> {}
 
+  async listModels(): Promise<string[]> {
+    if (!this.config.apiKey.trim()) return [];
+    try {
+      const response = await requestUrl({
+        url: "https://api.anthropic.com/v1/models",
+        headers: {
+          "x-api-key": this.config.apiKey,
+          "anthropic-version": "2023-06-01"
+        },
+        throw: false
+      });
+      if (response.status < 200 || response.status >= 300) return [];
+      const data = response.json;
+      return (data.data ?? [])
+        .map((m: { id?: string }) => m.id ?? "")
+        .filter(Boolean);
+    } catch {
+      return [];
+    }
+  }
+
   async validate(): Promise<boolean> {
     if (!this.config.apiKey.trim()) {
       return false;

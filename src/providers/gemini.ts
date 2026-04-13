@@ -85,6 +85,25 @@ export class GeminiProvider implements AIProvider {
 
   async deleteSource(): Promise<void> {}
 
+  async listModels(): Promise<string[]> {
+    if (!this.config.apiKey.trim()) return [];
+    try {
+      const response = await requestUrl({
+        url: `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(this.config.apiKey)}`,
+        throw: false
+      });
+      if (response.status < 200 || response.status >= 300) return [];
+      const data = response.json;
+      return (data.models ?? [])
+        .filter((m: { supportedGenerationMethods?: string[] }) =>
+          m.supportedGenerationMethods?.includes("generateContent"))
+        .map((m: { name?: string }) => (m.name ?? "").replace(/^models\//, ""))
+        .filter(Boolean);
+    } catch {
+      return [];
+    }
+  }
+
   async validate(): Promise<boolean> {
     if (!this.config.apiKey.trim()) {
       return false;

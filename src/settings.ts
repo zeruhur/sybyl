@@ -34,21 +34,11 @@ export function normalizeSettings(raw: Partial<SybylSettings> | null | undefined
   };
 }
 
-const GEMINI_MODELS = [
-  "gemini-3.1-pro-preview",
-  "gemini-3.1-pro-preview-customtools",
-  "gemini-2.5-flash"
-];
-const OPENAI_MODELS = ["gpt-5.2", "gpt-4.1", "gpt-4.1-mini"];
-const ANTHROPIC_MODELS = [
-  "claude-opus-4-6",
-  "claude-sonnet-4-6",
-  "claude-haiku-4-5-20251001"
-];
-
 export class SybylSettingTab extends PluginSettingTab {
   private validation: Partial<Record<ProviderID, ValidationState>> = {};
   private ollamaModels: string[] = [];
+  private modelCache: Partial<Record<ProviderID, string[]>> = {};
+  private fetchingProviders = new Set<ProviderID>();
 
   constructor(app: App, private readonly plugin: SybylPlugin) {
     super(app, plugin);
@@ -58,9 +48,35 @@ export class SybylSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     containerEl.createEl("h2", { text: `Sybyl Settings (${this.providerLabel(this.plugin.settings.activeProvider)})` });
+    this.maybeFetchModels();
     this.renderActiveProvider(containerEl);
     this.renderProviderConfig(containerEl);
     this.renderGlobalSettings(containerEl);
+  }
+
+  private maybeFetchModels(): void {
+    const active = this.plugin.settings.activeProvider;
+    if (active === "ollama") return;
+    const config = this.plugin.settings.providers[active];
+    const apiKey = (config as { apiKey?: string }).apiKey?.trim();
+    if (apiKey && !this.modelCache[active] && !this.fetchingProviders.has(active)) {
+      void this.fetchModels(active);
+    }
+  }
+
+  private async fetchModels(provider: ProviderID): Promise<void> {
+    this.fetchingProviders.add(provider);
+    try {
+      const models = await getProvider(this.plugin.settings, provider).listModels();
+      if (models.length > 0) {
+        this.modelCache[provider] = models;
+      }
+    } catch {
+      // silently fail — dropdown keeps showing current default
+    } finally {
+      this.fetchingProviders.delete(provider);
+      this.display();
+    }
   }
 
   private renderActiveProvider(containerEl: HTMLElement): void {
@@ -109,6 +125,7 @@ export class SybylSettingTab extends PluginSettingTab {
         text.setValue(config.apiKey);
         text.onChange(async (value) => {
           config.apiKey = value;
+          this.modelCache.gemini = undefined;
           await this.plugin.saveSettings();
         });
         text.inputEl.addEventListener("blur", () => void this.validateProvider("gemini"));
@@ -116,7 +133,8 @@ export class SybylSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Default Model")
       .addDropdown((dropdown) => {
-        GEMINI_MODELS.forEach((model) => dropdown.addOption(model, model));
+        const models = this.modelOptionsFor("gemini", config.defaultModel);
+        models.forEach((m) => dropdown.addOption(m, m));
         dropdown.setValue(config.defaultModel);
         dropdown.onChange(async (value) => {
           config.defaultModel = value;
@@ -135,6 +153,7 @@ export class SybylSettingTab extends PluginSettingTab {
         text.setValue(config.apiKey);
         text.onChange(async (value) => {
           config.apiKey = value;
+          this.modelCache.openai = undefined;
           await this.plugin.saveSettings();
         });
         text.inputEl.addEventListener("blur", () => void this.validateProvider("openai"));
@@ -146,6 +165,7 @@ export class SybylSettingTab extends PluginSettingTab {
         text.setValue(config.baseUrl);
         text.onChange(async (value) => {
           config.baseUrl = value;
+          this.modelCache.openai = undefined;
           await this.plugin.saveSettings();
         });
         text.inputEl.addEventListener("blur", () => void this.validateProvider("openai"));
@@ -153,7 +173,8 @@ export class SybylSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Default Model")
       .addDropdown((dropdown) => {
-        OPENAI_MODELS.forEach((model) => dropdown.addOption(model, model));
+        const models = this.modelOptionsFor("openai", config.defaultModel);
+        models.forEach((m) => dropdown.addOption(m, m));
         dropdown.setValue(config.defaultModel);
         dropdown.onChange(async (value) => {
           config.defaultModel = value;
@@ -175,6 +196,7 @@ export class SybylSettingTab extends PluginSettingTab {
         text.setValue(config.apiKey);
         text.onChange(async (value) => {
           config.apiKey = value;
+          this.modelCache.anthropic = undefined;
           await this.plugin.saveSettings();
         });
         text.inputEl.addEventListener("blur", () => void this.validateProvider("anthropic"));
@@ -182,7 +204,8 @@ export class SybylSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Default Model")
       .addDropdown((dropdown) => {
-        ANTHROPIC_MODELS.forEach((model) => dropdown.addOption(model, model));
+        const models = this.modelOptionsFor("anthropic", config.defaultModel);
+        models.forEach((m) => dropdown.addOption(m, m));
         dropdown.setValue(config.defaultModel);
         dropdown.onChange(async (value) => {
           config.defaultModel = value;
@@ -310,6 +333,12 @@ export class SybylSettingTab extends PluginSettingTab {
           });
         });
     }
+  }
+
+  private modelOptionsFor(provider: ProviderID, currentModel: string): string[] {
+    const cached = this.modelCache[provider];
+    if (!cached) return [currentModel];
+    return cached.includes(currentModel) ? cached : [currentModel, ...cached];
   }
 
   private renderValidationState(containerEl: HTMLElement, provider: ProviderID): void {

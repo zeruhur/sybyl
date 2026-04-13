@@ -83,6 +83,26 @@ export class OpenAIProvider implements AIProvider {
 
   async deleteSource(): Promise<void> {}
 
+  async listModels(): Promise<string[]> {
+    if (!this.config.apiKey.trim()) return [];
+    try {
+      const response = await requestUrl({
+        url: `${this.config.baseUrl.replace(/\/$/, "")}/models`,
+        headers: { Authorization: `Bearer ${this.config.apiKey}` },
+        throw: false
+      });
+      if (response.status < 200 || response.status >= 300) return [];
+      const data = response.json;
+      const EXCLUDE = ["embedding", "whisper", "tts", "dall-e", "moderation", "text-search", "text-similarity"];
+      return (data.data ?? [])
+        .map((m: { id?: string }) => m.id ?? "")
+        .filter((id: string) => id && !EXCLUDE.some((ex) => id.includes(ex)))
+        .sort();
+    } catch {
+      return [];
+    }
+  }
+
   async validate(): Promise<boolean> {
     if (!this.config.apiKey.trim()) {
       return false;

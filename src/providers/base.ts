@@ -8,4 +8,5 @@ export interface AIProvider {
   listSources(): Promise<UploadedFileInfo[]>;
   deleteSource(ref: UploadedFileInfo): Promise<void>;
   validate(): Promise<boolean>;
+  listModels(): Promise<string[]>;
 }

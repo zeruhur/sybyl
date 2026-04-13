@@ -133,9 +133,7 @@ export class ManageSourcesModal extends Modal {
   constructor(
     app: App,
     private readonly sources: SourceRef[],
-    private readonly onRemoveFromNote: (ref: SourceRef) => Promise<void>,
-    private readonly onDeleteFromProvider: (ref: SourceRef) => Promise<void>,
-    private readonly onAddSource: () => Promise<void>
+    private readonly onRemove: (ref: SourceRef) => Promise<void>
   ) {
     super(app);
   }
@@ -147,12 +145,6 @@ export class ManageSourcesModal extends Modal {
 
   private render(): void {
     this.contentEl.empty();
-    new Setting(this.contentEl).addButton((button) => {
-      button.setButtonText("Add source").setCta().onClick(async () => {
-        await this.onAddSource();
-        this.close();
-      });
-    });
     if (!this.sources.length) {
       this.contentEl.createEl("p", { text: "No sources are attached to this note." });
       return;
@@ -160,23 +152,11 @@ export class ManageSourcesModal extends Modal {
     this.sources.forEach((source) => {
       new Setting(this.contentEl)
         .setName(source.label)
-        .setDesc(`${source.provider} | ${describeSourceRef(source)}${source.expiresAt ? ` | Expires ${source.expiresAt}` : ""}`)
+        .setDesc(`${source.mime_type} | ${describeSourceRef(source)}`)
         .addButton((button) => {
-          button.setButtonText("Remove from note").onClick(async () => {
-            await this.onRemoveFromNote(source);
-            new Notice(`Removed '${source.label}' from note.`);
-            this.close();
-          });
-        })
-        .addButton((button) => {
-          button.setButtonText("Delete from provider");
-          if (!(source.file_uri || source.file_id)) {
-            button.setDisabled(true);
-            return;
-          }
-          button.onClick(async () => {
-            await this.onDeleteFromProvider(source);
-            new Notice(`Deleted '${source.label}' from provider.`);
+          button.setButtonText("Remove").onClick(async () => {
+            await this.onRemove(source);
+            new Notice(`Removed '${source.label}'.`);
             this.close();
           });
         });

@@ -1,6 +1,6 @@
 import { Notice, TFile } from "obsidian";
 import type SybylPlugin from "./main";
-import { appendToNote, getSelection, insertBelowSelection } from "./editor";
+import { getSelection, insertBelowSelection } from "./editor";
 import { removeSourceRef, upsertSourceRef, writeFrontMatterKey } from "./frontmatter";
 import {
   formatAskOracle,
@@ -13,9 +13,8 @@ import {
 } from "./lonelog/formatter";
 import { parseLonelogContext, serializeContext } from "./lonelog/parser";
 import { ManageSourcesModal, openInputModal, pickVaultFile } from "./modals";
-import { getProvider } from "./providers";
 import { resolveSourcesForRequest } from "./sourceUtils";
-import { NoteFrontMatter, SourceRef, SybylSettings, UploadedFileInfo } from "./types";
+import { NoteFrontMatter, SourceRef, SybylSettings } from "./types";
 
 function isLonelogActive(settings: SybylSettings, fm: NoteFrontMatter): boolean {
   return fm.lonelog ?? settings.lonelogMode;
@@ -49,15 +48,13 @@ function parseLonelogOracleResponse(text: string): { result: string; interpretat
   return { result, interpretation };
 }
 
-async function addSourceToNote(plugin: SybylPlugin, file: TFile, fm: NoteFrontMatter): Promise<void> {
-  const providerId = fm.provider ?? plugin.settings.activeProvider;
+async function addSourceToNote(plugin: SybylPlugin, file: TFile): Promise<void> {
   const vaultFile = await pickVaultFile(plugin.app, "Choose a vault file");
   if (!vaultFile) {
     return;
   }
   const ref: SourceRef = {
     label: vaultFile.basename,
-    provider: providerId,
     mime_type: inferMimeType(vaultFile),
     vault_path: vaultFile.path
   };
@@ -73,13 +70,7 @@ async function manageSources(plugin: SybylPlugin): Promise<void> {
   new ManageSourcesModal(
     plugin.app,
     context.fm.sources ?? [],
-    async (ref) => removeSourceRef(plugin.app, context.view.file!, ref),
-    async (ref) => {
-      const provider = getProvider(plugin.settings, ref.provider);
-      await provider.deleteSource(ref as UploadedFileInfo);
-      await removeSourceRef(plugin.app, context.view.file!, ref);
-    },
-    async () => addSourceToNote(plugin, context.view.file!, context.fm)
+    async (ref) => removeSourceRef(plugin.app, context.view.file!, ref)
   ).open();
 }
 
@@ -161,13 +152,12 @@ export function registerAllCommands(plugin: SybylPlugin): void {
       if (!vaultFile) {
         return;
       }
-      const providerId = context.fm.provider ?? plugin.settings.activeProvider;
       const ref: SourceRef = {
         label: vaultFile.basename,
-        provider: providerId,
         mime_type: inferMimeType(vaultFile),
         vault_path: vaultFile.path
       };
+      const providerId = context.fm.provider ?? plugin.settings.activeProvider;
       let resolvedSources;
       try {
         resolvedSources = await resolveSourcesForRequest(plugin.app, [ref], providerId);
@@ -296,7 +286,7 @@ Be concise and specific. Preserve game-mechanical details. Omit flavor prose and
 
   plugin.addCommand({
     id: "sybyl:interpret-oracle",
-    name: "Interpret Oracle Result",
+    name: "Interpret Oracle Roll",
     callback: async () => {
       const context = await plugin.getActiveNoteContext();
       if (!context) {
@@ -342,7 +332,7 @@ Be concise and specific. Preserve game-mechanical details. Omit flavor prose and
 
   plugin.addCommand({
     id: "sybyl:expand-scene",
-    name: "Expand Scene into Prose",
+    name: "Expand Scene",
     callback: async () => {
       await runGeneration(
         plugin,
@@ -365,7 +355,7 @@ Be concise and specific. Preserve game-mechanical details. Omit flavor prose and
         return;
       }
       try {
-        await addSourceToNote(plugin, context.view.file, context.fm);
+        await addSourceToNote(plugin, context.view.file);
       } catch (error) {
         new Notice(`Sybyl error: ${error instanceof Error ? error.message : String(error)}`);
       }
@@ -381,38 +371,8 @@ Be concise and specific. Preserve game-mechanical details. Omit flavor prose and
   });
 
   plugin.addCommand({
-    id: "sybyl:lonelog-new-scene",
-    name: "New Scene",
-    callback: async () => {
-      const context = await plugin.getActiveNoteContext();
-      if (!context?.view.file) {
-        return;
-      }
-      if (!isLonelogActive(plugin.settings, context.fm)) {
-        new Notice("Lonelog mode is not enabled for this note.");
-        return;
-      }
-      const values = await openInputModal(plugin.app, "New Scene", [
-        { key: "sceneDesc", label: "Scene description", placeholder: "Dark alley, midnight" }
-      ]);
-      if (!values?.sceneDesc) {
-        return;
-      }
-      const counter = context.fm.scene_counter ?? 1;
-      await runGeneration(
-        plugin,
-        `START SCENE. Generate only: 2-3 lines of third-person past-tense prose describing the atmosphere and setting of: "${values.sceneDesc}". No dialogue. No PC actions. No additional commentary.`,
-        (text) => formatStartScene(text, `S${counter}`, values.sceneDesc, lonelogOpts(plugin.settings))
-      );
-      if (plugin.settings.lonelogAutoIncScene) {
-        await writeFrontMatterKey(plugin.app, context.view.file, "scene_counter", counter + 1);
-      }
-    }
-  });
-
-  plugin.addCommand({
     id: "sybyl:lonelog-parse-context",
-    name: "Update Scene Context from Log",
+    name: "Update Scene Context",
     callback: async () => {
       const context = await plugin.getActiveNoteContext();
       if (!context?.view.file) {

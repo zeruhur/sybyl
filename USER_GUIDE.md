@@ -177,7 +177,7 @@ game_context: ""
 
 # Dynamic scene state — the current situation in play.
 # If non-empty, takes precedence over Lonelog auto-parsing.
-# Updated by "Update Scene Context from Log" or edited manually.
+# Updated by "Update Scene Context" or edited manually.
 scene_context: ""
 
 # Optional note-specific source list.
@@ -252,7 +252,7 @@ This replaces the old per-request source injection. Instead of sending a source 
 
 The current scene state. If non-empty, this takes precedence over Lonelog auto-parsing.
 
-Updated by **Update Scene Context from Log**, or edited manually.
+Updated by **Update Scene Context**, or edited manually.
 
 #### `sources`
 
@@ -323,7 +323,7 @@ Prompts for a question and an optional oracle result.
 - With a result: interprets it in context
 - Without a result: generates an answer and interpretation based on `oracle_mode`
 
-### Interpret Oracle Result
+### Interpret Oracle Roll
 
 Uses the current editor selection if available. If nothing is selected, asks for oracle text.
 
@@ -333,7 +333,7 @@ Inserts the interpretation below the selection.
 
 Generates 1–2 neutral complications or consequences based on the current context.
 
-### Expand Scene into Prose
+### Expand Scene
 
 Generates a 100–150 word prose passage from the current context. Third person, past tense, no dialogue.
 
@@ -345,16 +345,9 @@ Attached sources are used as input for **Digest Source into Game Context**, not 
 
 ### Manage Sources
 
-Lists sources attached to the current note. You can:
+Lists sources attached to the current note. Allows removing a source.
 
-- remove a source from the note
-- add a new source
-
-### New Scene *(Lonelog only)*
-
-Uses `scene_counter`. Inserts a Lonelog scene header and generated prose. Increments the counter if auto-increment is enabled in settings.
-
-### Update Scene Context from Log *(Lonelog only)*
+### Update Scene Context *(Lonelog only)*
 
 Parses the current note body and writes a compact summary into `scene_context`. Does not call the AI.
 
@@ -414,15 +407,15 @@ If neither is available, Sybyl generates from the command prompt alone.
 1. Run **Insert Note Frontmatter** and fill in game and PC details
 2. If you have source material, run **Add Source File** then **Digest Source into Game Context**
 3. Use **Start Scene**, **Declare Action**, **Ask Oracle**, **Suggest Consequence** during play
-4. Update `scene_context` manually or via **Update Scene Context from Log** as needed
+4. Update `scene_context` manually or via **Update Scene Context** as needed
 
 ### Lonelog Note
 
 1. Run **Insert Note Frontmatter** and enable `lonelog: true`
 2. Optionally digest source material into `game_context`
-3. Use **New Scene** to start each scene
+3. Use **Start Scene** to start each scene
 4. Log play in Lonelog notation
-5. Use **Update Scene Context from Log** to snapshot the current state
+5. Use **Update Scene Context** to snapshot the current state
 6. Use **New Session Header** at the start of each session
 
 ---

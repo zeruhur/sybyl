@@ -1,5 +1,5 @@
 import { App, TAbstractFile, TFile, normalizePath } from "obsidian";
-import { ResolvedSource, SourceRef } from "./types";
+import { ProviderID, ResolvedSource, SourceRef } from "./types";
 
 const TEXT_EXTENSIONS = new Set(["txt", "md", "markdown", "json", "yaml", "yml", "csv"]);
 
@@ -40,17 +40,10 @@ export function arrayBufferToBase64(buffer: ArrayBuffer): string {
 export async function resolveSourcesForRequest(
   app: App,
   sources: SourceRef[],
-  providerId: SourceRef["provider"]
+  providerId: ProviderID
 ): Promise<ResolvedSource[]> {
   const resolved: ResolvedSource[] = [];
   for (const ref of sources) {
-    if (ref.provider !== providerId) {
-      continue;
-    }
-    if (!ref.vault_path) {
-      resolved.push({ ref });
-      continue;
-    }
     if (providerId === "anthropic" || (providerId === "gemini" && ref.mime_type === "application/pdf")) {
       const buffer = await readVaultBinarySource(app, ref.vault_path);
       resolved.push({ ref, base64Data: arrayBufferToBase64(buffer) });
@@ -66,21 +59,8 @@ export function truncateSourceText(text: string, maxChars = 4000): string {
   return text.length <= maxChars ? text : text.slice(0, maxChars);
 }
 
-export function isProviderUploadCapable(ref: SourceRef): boolean {
-  return Boolean(ref.file_uri || ref.file_id);
-}
-
 export function describeSourceRef(ref: SourceRef): string {
-  if (ref.file_uri) {
-    return `URI: ${ref.file_uri}`;
-  }
-  if (ref.vault_path) {
-    return `Vault: ${ref.vault_path}`;
-  }
-  if (ref.file_id) {
-    return `File ID: ${ref.file_id}`;
-  }
-  return ref.mime_type;
+  return ref.vault_path;
 }
 
 export function listVaultCandidateFiles(app: App): TFile[] {

@@ -42,12 +42,8 @@ export interface SybylSettings {
 
 export interface SourceRef {
   label: string;
-  provider: ProviderID;
   mime_type: string;
-  file_uri?: string;
-  file_id?: string;
-  vault_path?: string;
-  expiresAt?: string;
+  vault_path: string;
 }
 
 export interface NoteFrontMatter {

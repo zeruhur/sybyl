@@ -110,7 +110,7 @@ export class GeminiProvider implements AIProvider {
       return `${providerName} API key rejected. Check settings.`;
     }
     if (response.status === 429) {
-      return "Rate limit hit. Wait a moment and retry.";
+      return `${providerName} rate limit reached. Wait a moment and retry.`;
     }
     try {
       const data = response.json;

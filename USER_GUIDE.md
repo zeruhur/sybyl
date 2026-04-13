@@ -329,9 +329,9 @@ Uses the current editor selection if available. If nothing is selected, asks for
 
 Inserts the interpretation below the selection.
 
-### Suggest Consequence
+### What Now
 
-Generates 1–2 neutral complications or consequences based on the current context.
+Generates 1–2 neutral possibilities for what the world does next, based on the current context.
 
 ### Expand Scene
 
@@ -406,7 +406,7 @@ If neither is available, Sybyl generates from the command prompt alone.
 
 1. Run **Insert Note Frontmatter** and fill in game and PC details
 2. If you have source material, run **Add Source File** then **Digest Source into Game Context**
-3. Use **Start Scene**, **Declare Action**, **Ask Oracle**, **Suggest Consequence** during play
+3. Use **Start Scene**, **Declare Action**, **Ask Oracle**, **What Now** during play
 4. Update `scene_context` manually or via **Update Scene Context** as needed
 
 ### Lonelog Note

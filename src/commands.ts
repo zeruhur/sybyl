@@ -317,7 +317,7 @@ Be concise and specific. Preserve game-mechanical details. Omit flavor prose and
 
   plugin.addCommand({
     id: "sybyl:suggest-consequence",
-    name: "Suggest Consequence",
+    name: "What Now",
     callback: async () => {
       await runGeneration(
         plugin,

@@ -25,14 +25,7 @@ export class GeminiProvider implements AIProvider {
 
     const parts: Array<Record<string, unknown>> = [];
     for (const source of request.resolvedSources ?? []) {
-      if (source.ref.file_uri) {
-        parts.push({
-          file_data: {
-            mime_type: source.ref.mime_type,
-            file_uri: source.ref.file_uri
-          }
-        });
-      } else if (source.base64Data) {
+      if (source.base64Data) {
         parts.push({
           inlineData: {
             mimeType: source.ref.mime_type,

@@ -53,7 +53,6 @@ export function formatAskOracle(
 }
 
 export function formatInterpretOracle(
-  oracleText: string,
   aiInterpretation: string,
   opts: LonelogFormatOptions
 ): string {
@@ -62,8 +61,7 @@ export function formatInterpretOracle(
     .filter(Boolean)
     .map((line) => (line.startsWith("=>") ? line : `=> ${line}`))
     .join("\n");
-  const notation = `-> ${oracleText}\n${interpretation}`;
-  return opts.wrapInCodeBlock ? fence(notation) : notation;
+  return opts.wrapInCodeBlock ? fence(interpretation) : interpretation;
 }
 
 export function formatSuggestConsequence(aiOptions: string, opts: LonelogFormatOptions): string {

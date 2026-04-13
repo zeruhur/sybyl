@@ -485,7 +485,7 @@ ${formatInstruction}`;
         `Interpret this oracle result in the context of the current scene: "${selected}"\nNeutral, third-person, 2-3 lines. No dramatic language.`,
         (text, fm) =>
           isLonelogActive(plugin.settings, fm)
-            ? formatInterpretOracle(selected, text, lonelogOpts(plugin.settings))
+            ? formatInterpretOracle(text, lonelogOpts(plugin.settings))
             : genericBlockquote("Interpretation", text),
         512,
         "below-selection"

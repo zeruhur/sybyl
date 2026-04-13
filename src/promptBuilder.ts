@@ -39,10 +39,10 @@ STRICT PROHIBITIONS - never violate these:
 - Never use bold text for dramatic effect
 
 RESPONSE FORMAT:
-- 3-4 lines maximum unless the user explicitly requests more
 - Neutral, third-person, factual tone
 - Past tense for scene descriptions, present tense for world state
 - No rhetorical questions
+- Be concise. Omit preamble, commentary, and closing remarks. Follow the length instruction in each request.
 
 ${pcs}
 ${tone}

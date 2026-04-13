@@ -405,7 +405,7 @@ Question: ${values.question}`;
           isLonelogActive(plugin.settings, fm)
             ? formatExpandScene(text, lonelogOpts(plugin.settings))
             : `---\n> [Prose] ${text.trim().replace(/\n/g, "\n> ")}\n---`,
-        300
+        600
       );
     }
   });

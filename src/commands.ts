@@ -1,6 +1,6 @@
 import { Notice, TFile, normalizePath } from "obsidian";
 import type SybylPlugin from "./main";
-import { getSelection, insertBelowSelection } from "./editor";
+import { getSelection, insertBelowSelection, isInsideCodeBlock } from "./editor";
 import { removeSourceRef, upsertSourceRef, writeFrontMatterKey } from "./frontmatter";
 import {
   formatAdventureSeed,
@@ -22,8 +22,8 @@ function isLonelogActive(settings: SybylSettings, fm: NoteFrontMatter): boolean 
   return fm.lonelog ?? settings.lonelogMode;
 }
 
-function lonelogOpts(settings: SybylSettings): LonelogFormatOptions {
-  return { wrapInCodeBlock: settings.lonelogWrapCodeBlock ?? true };
+function lonelogOpts(settings: SybylSettings, noWrap = false): LonelogFormatOptions {
+  return { wrapInCodeBlock: !noWrap && (settings.lonelogWrapCodeBlock ?? true) };
 }
 
 function genericBlockquote(label: string, text: string): string {
@@ -111,7 +111,7 @@ async function manageSources(plugin: SybylPlugin): Promise<void> {
 async function runGeneration(
   plugin: SybylPlugin,
   userMessage: string,
-  formatter: (text: string, fm: NoteFrontMatter) => string,
+  formatter: (text: string, fm: NoteFrontMatter, insideCodeBlock: boolean) => string,
   maxOutputTokens = 512,
   placement?: "cursor" | "end-of-note" | "below-selection"
 ): Promise<void> {
@@ -121,10 +121,20 @@ async function runGeneration(
   }
 
   try {
-    const response = await plugin.requestGeneration(context.fm, context.noteBody, userMessage, maxOutputTokens);
-    const formatted = formatter(response.text, context.fm);
+    const editor = context.view.editor;
+    let targetLine: number;
     if (placement === "below-selection") {
-      insertBelowSelection(context.view.editor, formatted);
+      targetLine = editor.listSelections()[0]?.head.line ?? editor.getCursor().line;
+    } else if (placement === "end-of-note") {
+      targetLine = editor.lastLine();
+    } else {
+      targetLine = editor.getCursor().line;
+    }
+    const insideCodeBlock = isInsideCodeBlock(editor, targetLine);
+    const response = await plugin.requestGeneration(context.fm, context.noteBody, userMessage, maxOutputTokens);
+    const formatted = formatter(response.text, context.fm, insideCodeBlock);
+    if (placement === "below-selection") {
+      insertBelowSelection(editor, formatted);
     } else {
       plugin.insertText(context.view, formatted, placement);
     }
@@ -300,8 +310,9 @@ Keep it concise — 4 bullet points, one short sentence each.`;
       try {
         const response = await plugin.requestRawGeneration(context.fm, prompt, 800, []);
         const lonelog = isLonelogActive(plugin.settings, context.fm);
+        const insideCodeBlock = isInsideCodeBlock(context.view.editor);
         const output = lonelog
-          ? formatAdventureSeed(response.text, lonelogOpts(plugin.settings))
+          ? formatAdventureSeed(response.text, lonelogOpts(plugin.settings, insideCodeBlock))
           : genericBlockquote("Adventure Seed", response.text);
         plugin.insertText(context.view, output);
         plugin.maybeInsertTokenComment(context.view, response);
@@ -359,8 +370,9 @@ ${concept ? `Character concept: ${concept}` : "Generate a random character."}
 ${formatInstruction}`;
       try {
         const response = await plugin.requestRawGeneration(context.fm, prompt, 1500, resolvedSources);
+        const insideCodeBlock = isInsideCodeBlock(context.view.editor);
         const output = lonelog
-          ? formatCharacter(response.text, lonelogOpts(plugin.settings))
+          ? formatCharacter(response.text, lonelogOpts(plugin.settings, insideCodeBlock))
           : genericBlockquote("Character", response.text);
         plugin.insertText(context.view, output);
         plugin.maybeInsertTokenComment(context.view, response);
@@ -389,7 +401,7 @@ ${formatInstruction}`;
         await runGeneration(
           plugin,
           `START SCENE. Generate only: 2-3 lines of third-person past-tense prose describing the atmosphere and setting of: "${values.sceneDesc}". No dialogue. No PC actions. No additional commentary.`,
-          (text) => formatStartScene(text, `S${counter}`, values.sceneDesc, lonelogOpts(plugin.settings))
+          (text, _fm, insideCodeBlock) => formatStartScene(text, `S${counter}`, values.sceneDesc, lonelogOpts(plugin.settings, insideCodeBlock))
         );
         if (plugin.settings.lonelogAutoIncScene) {
           await writeFrontMatterKey(plugin.app, context.view.file, "scene_counter", counter + 1);
@@ -418,9 +430,9 @@ ${formatInstruction}`;
       await runGeneration(
         plugin,
         `PC action: ${values.action}\nRoll result: ${values.roll}\nDescribe only the consequences and world reaction. Do not describe the PC's action.`,
-        (text, fm) =>
+        (text, fm, insideCodeBlock) =>
           isLonelogActive(plugin.settings, fm)
-            ? formatDeclareAction(values.action, values.roll, text, lonelogOpts(plugin.settings))
+            ? formatDeclareAction(values.action, values.roll, text, lonelogOpts(plugin.settings, insideCodeBlock))
             : `> [Action] ${values.action} | Roll: ${values.roll}\n> [Result] ${text.trim().replace(/\n/g, "\n> ")}`
       );
     }
@@ -448,15 +460,15 @@ ${formatInstruction}`;
       await runGeneration(
         plugin,
         message,
-        (text, fm) => {
+        (text, fm, insideCodeBlock) => {
           if (!isLonelogActive(plugin.settings, fm)) {
             return `> [Oracle] Q: ${values.question}\n> [Answer] ${text.trim().replace(/\n/g, "\n> ")}`;
           }
           if (hasResult) {
-            return formatAskOracle(values.question, values.result.trim(), text, lonelogOpts(plugin.settings));
+            return formatAskOracle(values.question, values.result.trim(), text, lonelogOpts(plugin.settings, insideCodeBlock));
           }
           const parsed = parseLonelogOracleResponse(text);
-          return formatAskOracle(values.question, parsed.result, parsed.interpretation, lonelogOpts(plugin.settings));
+          return formatAskOracle(values.question, parsed.result, parsed.interpretation, lonelogOpts(plugin.settings, insideCodeBlock));
         }
       );
     }
@@ -483,9 +495,9 @@ ${formatInstruction}`;
       await runGeneration(
         plugin,
         `Interpret this oracle result in the context of the current scene: "${selected}"\nNeutral, third-person, 2-3 lines. No dramatic language.`,
-        (text, fm) =>
+        (text, fm, insideCodeBlock) =>
           isLonelogActive(plugin.settings, fm)
-            ? formatInterpretOracle(text, lonelogOpts(plugin.settings))
+            ? formatInterpretOracle(text, lonelogOpts(plugin.settings, insideCodeBlock))
             : genericBlockquote("Interpretation", text),
         512,
         "below-selection"
@@ -500,9 +512,9 @@ ${formatInstruction}`;
       await runGeneration(
         plugin,
         "Based on the current scene context, suggest 1-2 possible consequences or complications. Present them as neutral options, not as narrative outcomes. Do not choose between them.",
-        (text, fm) =>
+        (text, fm, insideCodeBlock) =>
           isLonelogActive(plugin.settings, fm)
-            ? formatSuggestConsequence(text, lonelogOpts(plugin.settings))
+            ? formatSuggestConsequence(text, lonelogOpts(plugin.settings, insideCodeBlock))
             : genericBlockquote("Options", text)
       );
     }
@@ -515,9 +527,9 @@ ${formatInstruction}`;
       await runGeneration(
         plugin,
         "The player is stuck. Based on the current scene context, suggest exactly 3 concrete actions the PC could take next. Present them as neutral options numbered 1–3. Do not resolve or narrate any outcome. Do not recommend one over another.",
-        (text, fm) =>
+        (text, fm, insideCodeBlock) =>
           isLonelogActive(plugin.settings, fm)
-            ? formatSuggestConsequence(text, lonelogOpts(plugin.settings))
+            ? formatSuggestConsequence(text, lonelogOpts(plugin.settings, insideCodeBlock))
             : genericBlockquote("Actions", text)
       );
     }
@@ -530,9 +542,9 @@ ${formatInstruction}`;
       await runGeneration(
         plugin,
         "Expand the current scene into a prose passage. Third person, past tense, 100-150 words. No dialogue. Do not describe the PC's internal thoughts or decisions. Stay strictly within the established scene context.",
-        (text, fm) =>
+        (text, fm, insideCodeBlock) =>
           isLonelogActive(plugin.settings, fm)
-            ? formatExpandScene(text, lonelogOpts(plugin.settings))
+            ? formatExpandScene(text, lonelogOpts(plugin.settings, insideCodeBlock))
             : `---\n> [Prose] ${text.trim().replace(/\n/g, "\n> ")}\n---`,
         600
       );

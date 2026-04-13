@@ -21,3 +21,14 @@ export function insertBelowSelection(editor: Editor, text: string): void {
   const targetLine = selection ? selection.head.line : editor.getCursor().line;
   editor.replaceRange(`\n${text}`, { line: targetLine, ch: editor.getLine(targetLine).length });
 }
+
+export function isInsideCodeBlock(editor: Editor, atLine?: number): boolean {
+  const checkLine = atLine ?? editor.getCursor().line;
+  let inside = false;
+  for (let i = 0; i < checkLine; i++) {
+    if (/^```/.test(editor.getLine(i))) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}

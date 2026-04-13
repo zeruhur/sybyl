@@ -47,7 +47,8 @@ export class GeminiProvider implements AIProvider {
         contents: [{ role: "user", parts }],
         generationConfig: {
           temperature: request.temperature,
-          maxOutputTokens: request.maxOutputTokens
+          maxOutputTokens: request.maxOutputTokens,
+          thinkingConfig: { thinkingBudget: 0 }
         }
       }),
       throw: false

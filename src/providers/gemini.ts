@@ -109,12 +109,10 @@ export class GeminiProvider implements AIProvider {
     if (response.status === 401 || response.status === 403) {
       return `${providerName} API key rejected. Check settings.`;
     }
-    if (response.status === 429) {
-      return `${providerName} rate limit reached. Wait a moment and retry.`;
-    }
     try {
       const data = response.json;
-      return data?.error?.message ?? `${providerName} request failed (${response.status}).`;
+      const msg = data?.error?.message ?? `${providerName} request failed (${response.status}).`;
+      return response.status === 429 ? `${providerName} quota/rate error: ${msg}` : msg;
     } catch (error) {
       return asErrorMessage(error) || `${providerName} request failed (${response.status}).`;
     }

@@ -122,12 +122,10 @@ export class AnthropicProvider implements AIProvider {
     if (response.status === 401 || response.status === 403) {
       return "Anthropic API key rejected. Check settings.";
     }
-    if (response.status === 429) {
-      return "Anthropic rate limit reached. Wait a moment and retry.";
-    }
     try {
       const data = response.json;
-      return data?.error?.message ?? `Anthropic request failed (${response.status}).`;
+      const msg = data?.error?.message ?? `Anthropic request failed (${response.status}).`;
+      return response.status === 429 ? `Anthropic quota/rate error: ${msg}` : msg;
     } catch {
       return `Anthropic request failed (${response.status}).`;
     }

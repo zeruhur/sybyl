@@ -333,6 +333,10 @@ Inserts the interpretation below the selection.
 
 Generates 1–2 neutral possibilities for what the world does next, based on the current context.
 
+### What Can I Do
+
+For when you are stuck. Suggests 3 concrete actions the PC could take next, presented as neutral numbered options. Does not resolve any outcome or recommend one over another.
+
 ### Expand Scene
 
 Generates a 100–150 word prose passage from the current context. Third person, past tense, no dialogue.
@@ -406,7 +410,7 @@ If neither is available, Sybyl generates from the command prompt alone.
 
 1. Run **Insert Note Frontmatter** and fill in game and PC details
 2. If you have source material, run **Add Source File** then **Digest Source into Game Context**
-3. Use **Start Scene**, **Declare Action**, **Ask Oracle**, **What Now** during play
+3. Use **Start Scene**, **Declare Action**, **Ask Oracle**, **What Now**, **What Can I Do** during play
 4. Update `scene_context` manually or via **Update Scene Context** as needed
 
 ### Lonelog Note

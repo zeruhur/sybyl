@@ -331,6 +331,21 @@ Be concise and specific. Preserve game-mechanical details. Omit flavor prose and
   });
 
   plugin.addCommand({
+    id: "sybyl:what-can-i-do",
+    name: "What Can I Do",
+    callback: async () => {
+      await runGeneration(
+        plugin,
+        "The player is stuck. Based on the current scene context, suggest exactly 3 concrete actions the PC could take next. Present them as neutral options numbered 1–3. Do not resolve or narrate any outcome. Do not recommend one over another.",
+        (text, fm) =>
+          isLonelogActive(plugin.settings, fm)
+            ? formatSuggestConsequence(text, lonelogOpts(plugin.settings))
+            : genericBlockquote("Actions", text)
+      );
+    }
+  });
+
+  plugin.addCommand({
     id: "sybyl:expand-scene",
     name: "Expand Scene",
     callback: async () => {

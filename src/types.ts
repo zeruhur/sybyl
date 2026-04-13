@@ -55,6 +55,7 @@ export interface SourceRef {
 export interface NoteFrontMatter {
   // Lonelog standard fields
   ruleset?: string;
+  genre?: string;
   pcs?: string;
   tone?: string;
   // Sybyl-specific fields

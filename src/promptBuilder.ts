@@ -18,6 +18,7 @@ Generate only the symbol-prefixed content lines. The formatter handles wrapping.
 function buildBasePrompt(fm: NoteFrontMatter): string {
   const ruleset = fm.ruleset ?? "the game";
   const pcs = fm.pcs ? `Player character: ${fm.pcs}` : "";
+  const genre = fm.genre ? `Genre: ${fm.genre}` : "";
   const tone = fm.tone ? `Tone: ${fm.tone}` : "";
   const language = fm.language
     ? `Respond in ${fm.language}.`
@@ -45,6 +46,7 @@ RESPONSE FORMAT:
 - Be concise. Omit preamble, commentary, and closing remarks. Follow the length instruction in each request.
 
 ${pcs}
+${genre}
 ${tone}
 ${language}`.trim();
 }

@@ -156,6 +156,7 @@ export function registerAllCommands(plugin: SybylPlugin): void {
       }
       const values = await openInputModal(plugin.app, "Insert Sybyl Frontmatter", [
         { key: "ruleset", label: "Game / ruleset", placeholder: "Ironsworn" },
+        { key: "genre", label: "Genre", optional: true, placeholder: "Dark fantasy / survival" },
         { key: "pcs", label: "PC", optional: true, placeholder: "Kira Voss, dangerous rank, vow: recover the relic" },
         { key: "tone", label: "Tone", optional: true, placeholder: "Gritty, hopeful" },
         { key: "language", label: "Language", optional: true, placeholder: "Leave blank for auto-detect" }
@@ -176,6 +177,7 @@ export function registerAllCommands(plugin: SybylPlugin): void {
         fm["session_number"] = fm["session_number"] ?? 1;
         fm["game_context"] = fm["game_context"] ?? "";
         fm["scene_context"] = fm["scene_context"] ?? "";
+        if (values.genre) fm["genre"] = values.genre;
         if (values.pcs) fm["pcs"] = values.pcs;
         if (values.tone) fm["tone"] = values.tone;
         if (values.language) fm["language"] = values.language;

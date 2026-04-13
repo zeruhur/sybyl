@@ -130,7 +130,13 @@ export class OpenRouterProvider implements AIProvider {
     try {
       const data = response.json;
       const msg = data?.error?.message ?? `OpenRouter request failed (${response.status}).`;
-      return response.status === 429 ? `OpenRouter quota/rate error: ${msg}` : msg;
+      if (response.status === 429) {
+        if (msg === "Provider returned error") {
+          return "OpenRouter: free model endpoint at capacity. Retry in a moment or pick a different model.";
+        }
+        return `OpenRouter rate limit: ${msg}`;
+      }
+      return msg;
     } catch (error) {
       return asErrorMessage(error) || `OpenRouter request failed (${response.status}).`;
     }

@@ -78,3 +78,17 @@ export function formatSuggestConsequence(aiOptions: string, opts: LonelogFormatO
 export function formatExpandScene(aiProse: string, _opts: LonelogFormatOptions): string {
   return `\\---\n${cleanAiText(aiProse)}\n---\\`;
 }
+
+export function formatAdventureSeed(aiText: string, opts: LonelogFormatOptions): string {
+  const axes = cleanAiText(aiText)
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => "  " + line.replace(/^[-*]\s*/, ""))
+    .join("\n");
+  const notation = `gen: Adventure Seed\n${axes}`;
+  return opts.wrapInCodeBlock ? fence(notation) : notation;
+}
+
+export function formatCharacter(aiText: string, _opts: LonelogFormatOptions): string {
+  return cleanAiText(aiText);
+}

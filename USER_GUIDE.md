@@ -311,6 +311,22 @@ Sends a specific question to the AI along with the full content of a selected so
 
 If the note has one source attached, it is used automatically. If multiple sources are attached, a picker is shown first.
 
+### Adventure Seed
+
+For when you have no idea how to start. Generates a structured campaign pitch with premise, conflict, hook, and tone — using the note's `ruleset` and `game_context`. Optionally accepts a theme or concept to steer the result.
+
+- Normal mode: inserts a blockquote-style pitch block
+- Lonelog mode: inserts a `gen: Adventure Seed` multi-line result block with indented axes (Premise, Conflict, Hook, Tone), optionally wrapped in a code fence
+
+### Generate Character
+
+Creates a character by following the exact character creation procedure in a source file. Uses the full source text — not `game_context` — so that stat ranges, starting equipment, and mechanical steps are precise.
+
+Requires at least one source attached to the note. Optionally accepts a character concept.
+
+- Normal mode: inserts a blockquote-style character sheet
+- Lonelog mode: outputs a `[PC:Name|stat|gear|trait]` tag block in Lonelog format, ready to use as a persistent character reference
+
 This command sends the full source file on every call and is intentionally token-intensive. Use it for targeted lookups, not general play.
 
 ### Start Scene

@@ -1,9 +1,11 @@
-import { Notice, TFile } from "obsidian";
+import { Notice, TFile, normalizePath } from "obsidian";
 import type SybylPlugin from "./main";
 import { getSelection, insertBelowSelection } from "./editor";
 import { removeSourceRef, upsertSourceRef, writeFrontMatterKey } from "./frontmatter";
 import {
+  formatAdventureSeed,
   formatAskOracle,
+  formatCharacter,
   formatDeclareAction,
   formatExpandScene,
   formatInterpretOracle,
@@ -12,7 +14,7 @@ import {
   LonelogFormatOptions
 } from "./lonelog/formatter";
 import { parseLonelogContext, serializeContext } from "./lonelog/parser";
-import { ManageSourcesModal, openInputModal, pickSourceRef, pickVaultFile } from "./modals";
+import { ManageSourcesModal, openInputModal, pickLocalFile, pickSourceOrigin, pickSourceRef, pickVaultFile } from "./modals";
 import { resolveSourcesForRequest } from "./sourceUtils";
 import { NoteFrontMatter, SourceRef, SybylSettings } from "./types";
 
@@ -49,17 +51,49 @@ function parseLonelogOracleResponse(text: string): { result: string; interpretat
 }
 
 async function addSourceToNote(plugin: SybylPlugin, file: TFile): Promise<void> {
-  const vaultFile = await pickVaultFile(plugin.app, "Choose a vault file");
-  if (!vaultFile) {
+  const origin = await pickSourceOrigin(plugin.app);
+  if (!origin) return;
+
+  if (origin === "vault") {
+    const vaultFile = await pickVaultFile(plugin.app, "Choose a vault file");
+    if (!vaultFile) return;
+    const ref: SourceRef = {
+      label: vaultFile.basename,
+      mime_type: inferMimeType(vaultFile),
+      vault_path: vaultFile.path
+    };
+    await upsertSourceRef(plugin.app, file, ref);
+    new Notice(`Source added: ${vaultFile.path}`);
     return;
   }
+
+  // External file — import into vault
+  const localFile = await pickLocalFile();
+  if (!localFile) return;
+
+  const buffer = await localFile.arrayBuffer();
+  const parentDir = file.parent?.path ?? "";
+  const sourcesFolder = normalizePath(parentDir ? `${parentDir}/sources` : "sources");
+
+  if (!plugin.app.vault.getAbstractFileByPath(sourcesFolder)) {
+    await plugin.app.vault.createFolder(sourcesFolder);
+  }
+
+  const targetPath = normalizePath(`${sourcesFolder}/${localFile.name}`);
+  const existing = plugin.app.vault.getAbstractFileByPath(targetPath);
+  if (existing instanceof TFile) {
+    await plugin.app.vault.modifyBinary(existing, buffer);
+  } else {
+    await plugin.app.vault.createBinary(targetPath, buffer);
+  }
+
   const ref: SourceRef = {
-    label: vaultFile.basename,
-    mime_type: inferMimeType(vaultFile),
-    vault_path: vaultFile.path
+    label: localFile.name.replace(/\.[^.]+$/, ""),
+    mime_type: inferMimeType(localFile),
+    vault_path: targetPath
   };
   await upsertSourceRef(plugin.app, file, ref);
-  new Notice(`Source added: ${vaultFile.path}`);
+  new Notice(`Source imported: ${targetPath}`);
 }
 
 async function manageSources(plugin: SybylPlugin): Promise<void> {
@@ -234,6 +268,101 @@ Question: ${values.question}`;
       try {
         const response = await plugin.requestRawGeneration(context.fm, prompt, 1000, resolvedSources);
         plugin.insertText(context.view, genericBlockquote("Rules", response.text));
+        plugin.maybeInsertTokenComment(context.view, response);
+      } catch (error) {
+        new Notice(`Sybyl error: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+  });
+
+  plugin.addCommand({
+    id: "sybyl:adventure-seed",
+    name: "Adventure Seed",
+    callback: async () => {
+      const context = await plugin.getActiveNoteContext();
+      if (!context?.view.file) return;
+      const values = await openInputModal(plugin.app, "Adventure Seed", [
+        { key: "concept", label: "Theme or concept", optional: true, placeholder: "Leave blank for a random seed." }
+      ]);
+      if (!values) return;
+      const ruleset = context.fm.ruleset ?? "the game";
+      const concept = values.concept?.trim();
+      const prompt = `Generate an adventure seed for a solo tabletop RPG session of "${ruleset}".
+
+Structure the output as:
+- Premise: one sentence describing the situation
+- Conflict: the central tension or threat
+- Hook: the specific event that pulls the PC in
+- Tone: the intended atmosphere
+
+${concept ? `Theme/concept: ${concept}` : "Make it evocative and immediately playable."}
+Keep it concise — 4 bullet points, one short sentence each.`;
+      try {
+        const response = await plugin.requestRawGeneration(context.fm, prompt, 800, []);
+        const lonelog = isLonelogActive(plugin.settings, context.fm);
+        const output = lonelog
+          ? formatAdventureSeed(response.text, lonelogOpts(plugin.settings))
+          : genericBlockquote("Adventure Seed", response.text);
+        plugin.insertText(context.view, output);
+        plugin.maybeInsertTokenComment(context.view, response);
+      } catch (error) {
+        new Notice(`Sybyl error: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+  });
+
+  plugin.addCommand({
+    id: "sybyl:generate-character",
+    name: "Generate Character",
+    callback: async () => {
+      const context = await plugin.getActiveNoteContext();
+      if (!context?.view.file) return;
+      const sources = context.fm.sources ?? [];
+      if (!sources.length) {
+        new Notice("No sources attached to this note. Add a rulebook first via Add Source File.");
+        return;
+      }
+      const ref = sources.length === 1
+        ? sources[0]
+        : await pickSourceRef(plugin.app, "Choose a rulebook source", sources);
+      if (!ref) return;
+      const values = await openInputModal(plugin.app, "Generate Character", [
+        { key: "concept", label: "Character concept", optional: true, placeholder: "Leave blank for a random character." }
+      ]);
+      if (!values) return;
+      const providerId = context.fm.provider ?? plugin.settings.activeProvider;
+      let resolvedSources;
+      try {
+        resolvedSources = await resolveSourcesForRequest(plugin.app, [ref], providerId);
+      } catch (error) {
+        new Notice(`Cannot read source: ${error instanceof Error ? error.message : String(error)}`);
+        return;
+      }
+      const ruleset = context.fm.ruleset ?? "the game";
+      const concept = values.concept?.trim();
+      const lonelog = isLonelogActive(plugin.settings, context.fm);
+      const formatInstruction = lonelog
+        ? `Format the output as a Lonelog PC tag. Use the multi-line form for complex characters:
+[PC:Name
+  | stat: HP X, Stress Y
+  | gear: item1, item2
+  | trait: value1, value2
+]
+Include all stats and fields exactly as defined by the rules. Output the tag only — no extra commentary.`
+        : `Include all required fields as defined by the rules: name, stats/attributes, starting equipment, background, and any other mandatory character elements. Format clearly with one field per line.`;
+      const prompt = `Using ONLY the character creation rules in the provided source material, generate a character for "${ruleset}".
+
+Follow the exact character creation procedure described in the rules. Do not invent mechanics not present in the source.
+
+${concept ? `Character concept: ${concept}` : "Generate a random character."}
+
+${formatInstruction}`;
+      try {
+        const response = await plugin.requestRawGeneration(context.fm, prompt, 1500, resolvedSources);
+        const output = lonelog
+          ? formatCharacter(response.text, lonelogOpts(plugin.settings))
+          : genericBlockquote("Character", response.text);
+        plugin.insertText(context.view, output);
         plugin.maybeInsertTokenComment(context.view, response);
       } catch (error) {
         new Notice(`Sybyl error: ${error instanceof Error ? error.message : String(error)}`);

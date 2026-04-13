@@ -129,6 +129,51 @@ export function pickVaultFile(app: App, title: string): Promise<TFile | null> {
   });
 }
 
+export class SourceOriginModal extends Modal {
+  constructor(app: App, private readonly onPick: (origin: "vault" | "external") => void) {
+    super(app);
+  }
+
+  onOpen(): void {
+    this.titleEl.setText("Add Source File");
+    this.contentEl.empty();
+    new Setting(this.contentEl)
+      .setName("Vault file")
+      .setDesc("Pick a file already in your vault")
+      .addButton((btn) => btn.setButtonText("Choose").setCta().onClick(() => {
+        this.onPick("vault");
+        this.close();
+      }));
+    new Setting(this.contentEl)
+      .setName("External file")
+      .setDesc("Import a file from your computer — saved into a sources/ subfolder next to this note")
+      .addButton((btn) => btn.setButtonText("Import").setCta().onClick(() => {
+        this.onPick("external");
+        this.close();
+      }));
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
+}
+
+export function pickSourceOrigin(app: App): Promise<"vault" | "external" | null> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const modal = new SourceOriginModal(app, (origin) => {
+      settled = true;
+      resolve(origin);
+    });
+    const originalClose = modal.onClose.bind(modal);
+    modal.onClose = () => {
+      originalClose();
+      if (!settled) resolve(null);
+    };
+    modal.open();
+  });
+}
+
 export class SourcePickerModal extends Modal {
   constructor(
     app: App,

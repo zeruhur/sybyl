@@ -129,6 +129,55 @@ export function pickVaultFile(app: App, title: string): Promise<TFile | null> {
   });
 }
 
+export class SourcePickerModal extends Modal {
+  constructor(
+    app: App,
+    private readonly title: string,
+    private readonly sources: SourceRef[],
+    private readonly onPick: (ref: SourceRef) => void
+  ) {
+    super(app);
+  }
+
+  onOpen(): void {
+    this.titleEl.setText(this.title);
+    this.contentEl.empty();
+    this.sources.forEach((source) => {
+      new Setting(this.contentEl)
+        .setName(source.label)
+        .setDesc(`${source.mime_type} | ${describeSourceRef(source)}`)
+        .addButton((button) => {
+          button.setButtonText("Select").setCta().onClick(() => {
+            this.onPick(source);
+            this.close();
+          });
+        });
+    });
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
+}
+
+export function pickSourceRef(app: App, title: string, sources: SourceRef[]): Promise<SourceRef | null> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const modal = new SourcePickerModal(app, title, sources, (ref) => {
+      settled = true;
+      resolve(ref);
+    });
+    const originalClose = modal.onClose.bind(modal);
+    modal.onClose = () => {
+      originalClose();
+      if (!settled) {
+        resolve(null);
+      }
+    };
+    modal.open();
+  });
+}
+
 export class ManageSourcesModal extends Modal {
   constructor(
     app: App,

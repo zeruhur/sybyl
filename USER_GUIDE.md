@@ -305,6 +305,14 @@ Supported file types depend on the active provider:
 - Text and Markdown: all providers
 - PDF: Gemini and Anthropic only
 
+### Ask the Rules
+
+Sends a specific question to the AI along with the full content of a selected source file. Use this when you need a precise rules answer that the digest may not cover.
+
+If the note has one source attached, it is used automatically. If multiple sources are attached, a picker is shown first.
+
+This command sends the full source file on every call and is intentionally token-intensive. Use it for targeted lookups, not general play.
+
 ### Start Scene
 
 Generates a short scene opening.

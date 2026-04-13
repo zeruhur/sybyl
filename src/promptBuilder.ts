@@ -68,11 +68,13 @@ export function buildRequest(
   const lonelogActive = fm.lonelog ?? settings.lonelogMode;
 
   let contextBlock = "";
-  if (fm.scene_context?.trim()) {
-    contextBlock = `SCENE CONTEXT:\n${fm.scene_context.trim()}`;
-  } else if (lonelogActive && noteBody) {
+  if (lonelogActive && noteBody) {
+    // In Lonelog mode the live note body is always the source of truth
     const ctx = parseLonelogContext(noteBody, settings.lonelogContextDepth);
     contextBlock = serializeContext(ctx);
+  } else if (fm.scene_context?.trim()) {
+    // For non-Lonelog notes, use the manually maintained scene_context
+    contextBlock = `SCENE CONTEXT:\n${fm.scene_context.trim()}`;
   }
 
   const contextMessage = contextBlock ? `${contextBlock}\n\n${userMessage}` : userMessage;

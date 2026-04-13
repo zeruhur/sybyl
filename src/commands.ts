@@ -12,7 +12,7 @@ import {
   LonelogFormatOptions
 } from "./lonelog/formatter";
 import { parseLonelogContext, serializeContext } from "./lonelog/parser";
-import { ManageSourcesModal, openInputModal, pickVaultFile } from "./modals";
+import { ManageSourcesModal, openInputModal, pickSourceRef, pickVaultFile } from "./modals";
 import { resolveSourcesForRequest } from "./sourceUtils";
 import { NoteFrontMatter, SourceRef, SybylSettings } from "./types";
 
@@ -186,6 +186,55 @@ Be concise and specific. Preserve game-mechanical details. Omit flavor prose and
           fm["game_context"] = response.text;
         });
         new Notice("Game context updated.");
+      } catch (error) {
+        new Notice(`Sybyl error: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+  });
+
+  plugin.addCommand({
+    id: "sybyl:ask-the-rules",
+    name: "Ask the Rules",
+    callback: async () => {
+      const context = await plugin.getActiveNoteContext();
+      if (!context?.view.file) {
+        return;
+      }
+      const sources = context.fm.sources ?? [];
+      if (!sources.length) {
+        new Notice("No sources attached to this note. Use Add Source File first.");
+        return;
+      }
+      const ref = sources.length === 1
+        ? sources[0]
+        : await pickSourceRef(plugin.app, "Choose a source to query", sources);
+      if (!ref) {
+        return;
+      }
+      const values = await openInputModal(plugin.app, "Ask the Rules", [
+        { key: "question", label: "Question", placeholder: "How does Momentum work?" }
+      ]);
+      if (!values?.question) {
+        return;
+      }
+      const providerId = context.fm.provider ?? plugin.settings.activeProvider;
+      let resolvedSources;
+      try {
+        resolvedSources = await resolveSourcesForRequest(plugin.app, [ref], providerId);
+      } catch (error) {
+        new Notice(`Cannot read source: ${error instanceof Error ? error.message : String(error)}`);
+        return;
+      }
+      const ruleset = context.fm.ruleset ?? "the game";
+      const prompt = `You are a rules reference for "${ruleset}".
+Answer the following question using only the provided source material.
+Be precise and cite the relevant rule or page section if possible.
+
+Question: ${values.question}`;
+      try {
+        const response = await plugin.requestRawGeneration(context.fm, prompt, 1000, resolvedSources);
+        plugin.insertText(context.view, genericBlockquote("Rules", response.text));
+        plugin.maybeInsertTokenComment(context.view, response);
       } catch (error) {
         new Notice(`Sybyl error: ${error instanceof Error ? error.message : String(error)}`);
       }

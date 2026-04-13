@@ -34,6 +34,7 @@ export function parseLonelogContext(noteBody: string, depthLines = 60): LonelogC
   const trackRe = /\[Track:([^\]]+)\]/g;
   const pcRe = /\[PC:([^\]]+)\]/g;
   const beatRe = /^(@|\?|d:|->|=>)/;
+  const skipRe = /^(#|---|>\s*\[|\[N:|\[L:|\[Thread:|\[Clock:|\[Track:|\[PC:)/;
 
   const npcMap = new Map<string, string>();
   const locMap = new Map<string, string>();
@@ -56,6 +57,8 @@ export function parseLonelogContext(noteBody: string, depthLines = 60): LonelogC
     for (const match of line.matchAll(trackRe)) trackMap.set(match[1].split(" ")[0], match[1]);
     for (const match of line.matchAll(pcRe)) pcMap.set(match[1].split("|")[0], match[1]);
     if (beatRe.test(line)) {
+      ctx.recentBeats.push(line);
+    } else if (line.length > 0 && !skipRe.test(line) && !sceneRe.test(line)) {
       ctx.recentBeats.push(line);
     }
   }

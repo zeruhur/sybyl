@@ -10,7 +10,8 @@ export const DEFAULT_SETTINGS: SybylSettings = {
     gemini: { apiKey: "", defaultModel: "gemini-2.5-flash" },
     openai: { apiKey: "", defaultModel: "gpt-5.2", baseUrl: "https://api.openai.com/v1" },
     anthropic: { apiKey: "", defaultModel: "claude-sonnet-4-6" },
-    ollama: { baseUrl: "http://localhost:11434", defaultModel: "gemma3" }
+    ollama: { baseUrl: "http://localhost:11434", defaultModel: "gemma3" },
+    openrouter: { apiKey: "", defaultModel: "meta-llama/llama-3.3-70b-instruct:free" }
   },
   insertionMode: "cursor",
   showTokenCount: false,
@@ -29,7 +30,8 @@ export function normalizeSettings(raw: Partial<SybylSettings> | null | undefined
       gemini: { ...DEFAULT_SETTINGS.providers.gemini, ...(raw?.providers?.gemini ?? {}) },
       openai: { ...DEFAULT_SETTINGS.providers.openai, ...(raw?.providers?.openai ?? {}) },
       anthropic: { ...DEFAULT_SETTINGS.providers.anthropic, ...(raw?.providers?.anthropic ?? {}) },
-      ollama: { ...DEFAULT_SETTINGS.providers.ollama, ...(raw?.providers?.ollama ?? {}) }
+      ollama: { ...DEFAULT_SETTINGS.providers.ollama, ...(raw?.providers?.ollama ?? {}) },
+      openrouter: { ...DEFAULT_SETTINGS.providers.openrouter, ...(raw?.providers?.openrouter ?? {}) }
     }
   };
 }
@@ -88,6 +90,7 @@ export class SybylSettingTab extends PluginSettingTab {
         dropdown.addOption("openai", "OpenAI");
         dropdown.addOption("anthropic", "Anthropic (Claude)");
         dropdown.addOption("ollama", "Ollama (local)");
+        dropdown.addOption("openrouter", "OpenRouter");
         dropdown.setValue(this.plugin.settings.activeProvider);
         dropdown.onChange(async (value) => {
           this.plugin.settings.activeProvider = value as ProviderID;
@@ -111,6 +114,9 @@ export class SybylSettingTab extends PluginSettingTab {
         break;
       case "ollama":
         this.renderOllamaSettings(containerEl);
+        break;
+      case "openrouter":
+        this.renderOpenRouterSettings(containerEl);
         break;
     }
   }
@@ -214,6 +220,37 @@ export class SybylSettingTab extends PluginSettingTab {
       });
     containerEl.createEl("p", {
       text: "PDFs are encoded inline per request. Use short excerpts to avoid high token costs."
+    });
+  }
+
+  private renderOpenRouterSettings(containerEl: HTMLElement): void {
+    const config = this.plugin.settings.providers.openrouter;
+    this.renderValidationState(containerEl, "openrouter");
+    new Setting(containerEl)
+      .setName("API Key")
+      .addText((text) => {
+        text.inputEl.type = "password";
+        text.setValue(config.apiKey);
+        text.onChange(async (value) => {
+          config.apiKey = value;
+          this.modelCache.openrouter = undefined;
+          await this.plugin.saveSettings();
+        });
+        text.inputEl.addEventListener("blur", () => void this.validateProvider("openrouter"));
+      });
+    new Setting(containerEl)
+      .setName("Default Model")
+      .addDropdown((dropdown) => {
+        const models = this.modelOptionsFor("openrouter", config.defaultModel);
+        models.forEach((m) => dropdown.addOption(m, m));
+        dropdown.setValue(config.defaultModel);
+        dropdown.onChange(async (value) => {
+          config.defaultModel = value;
+          await this.plugin.saveSettings();
+        });
+      });
+    containerEl.createEl("p", {
+      text: "OpenRouter provides access to many free and paid models via a unified API. Free models have ':free' in their ID."
     });
   }
 
@@ -366,6 +403,8 @@ export class SybylSettingTab extends PluginSettingTab {
         return "Anthropic";
       case "ollama":
         return "Ollama";
+      case "openrouter":
+        return "OpenRouter";
     }
   }
 

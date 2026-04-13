@@ -1,4 +1,4 @@
-export type ProviderID = "gemini" | "openai" | "anthropic" | "ollama";
+export type ProviderID = "gemini" | "openai" | "anthropic" | "ollama" | "openrouter";
 export type OracleMode = "yes-no" | "fate" | "custom";
 export type InsertionMode = "cursor" | "end-of-note";
 
@@ -23,6 +23,11 @@ export interface OllamaProviderConfig {
   defaultModel: string;
 }
 
+export interface OpenRouterProviderConfig {
+  apiKey: string;
+  defaultModel: string;
+}
+
 export interface SybylSettings {
   activeProvider: ProviderID;
   providers: {
@@ -30,6 +35,7 @@ export interface SybylSettings {
     openai: OpenAIProviderConfig;
     anthropic: AnthropicProviderConfig;
     ollama: OllamaProviderConfig;
+    openrouter: OpenRouterProviderConfig;
   };
   insertionMode: InsertionMode;
   showTokenCount: boolean;

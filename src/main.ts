@@ -4,6 +4,7 @@ import { buildRequest, buildSystemPrompt } from "./promptBuilder";
 import { readFrontMatter } from "./frontmatter";
 import { getProvider } from "./providers";
 import { registerAllCommands } from "./commands";
+import { QuickMenuModal } from "./modals";
 import { DEFAULT_SETTINGS, SybylSettingTab, normalizeSettings } from "./settings";
 import { GenerationRequest, GenerationResponse, NoteFrontMatter, ResolvedSource, SybylSettings } from "./types";
 
@@ -20,6 +21,9 @@ export default class SybylPlugin extends Plugin {
     await this.loadSettings();
     this.addSettingTab(new SybylSettingTab(this.app, this));
     registerAllCommands(this);
+    this.addRibbonIcon("dice", "Sybyl", () => {
+      new QuickMenuModal(this.app, this).open();
+    });
   }
 
   async loadSettings(): Promise<void> {

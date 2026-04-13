@@ -1,4 +1,4 @@
-import { App, Modal, Notice, Setting, TFile } from "obsidian";
+import { App, Modal, Notice, Plugin, Setting, TFile } from "obsidian";
 import { describeSourceRef, listVaultCandidateFiles } from "./sourceUtils";
 import { ModalField, SourceRef } from "./types";
 
@@ -221,6 +221,48 @@ export function pickSourceRef(app: App, title: string, sources: SourceRef[]): Pr
     };
     modal.open();
   });
+}
+
+export interface QuickMenuItem {
+  label: string;
+  commandId: string;
+}
+
+export class QuickMenuModal extends Modal {
+  private readonly items: QuickMenuItem[];
+
+  constructor(app: App, private readonly plugin: Plugin) {
+    super(app);
+    this.items = [
+      { label: "Start Scene",           commandId: "sybyl:start-scene" },
+      { label: "Declare Action",        commandId: "sybyl:declare-action" },
+      { label: "Ask Oracle",            commandId: "sybyl:ask-oracle" },
+      { label: "Interpret Oracle Roll", commandId: "sybyl:interpret-oracle-roll" },
+      { label: "What Now",              commandId: "sybyl:what-now" },
+      { label: "What Can I Do",         commandId: "sybyl:what-can-i-do" },
+      { label: "Expand Scene",          commandId: "sybyl:expand-scene" }
+    ];
+  }
+
+  onOpen(): void {
+    this.titleEl.setText("Sybyl");
+    this.contentEl.empty();
+    for (const item of this.items) {
+      new Setting(this.contentEl)
+        .setName(item.label)
+        .addButton((btn) =>
+          btn.setButtonText("Run").setCta().onClick(() => {
+            this.close();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (this.plugin.app as any).commands.executeCommandById(item.commandId);
+          })
+        );
+    }
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
 }
 
 export class ManageSourcesModal extends Modal {

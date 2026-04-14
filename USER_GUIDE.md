@@ -216,9 +216,15 @@ Creative and genre tone. Injected into the system prompt. Examples: `"Gritty, ho
 
 #### `oracle_mode`
 
-Used by Ask Oracle when the oracle result field is left blank.
+Used by Ask Oracle when the oracle result field is left blank. Has no effect when you supply a result yourself.
 
-Supported values: `yes-no`, `fate`, `custom`.
+| Value | Behaviour |
+|---|---|
+| `yes-no` | Binary oracle. The model produces a yes or no answer, optionally with a qualifier ("yes, but…", "no, and…"). Default when the field is omitted. |
+| `fate` | Likelihood oracle. The model weighs probability and produces a graduated result — strong yes, yes with complication, unlikely, twist, etc. Suitable for Mythic-style play. |
+| `custom` | Open-ended hint. The model interprets the oracle loosely, guided by `ruleset` and `game_context`. Use this when your game's oracle tables or procedure are already described in `game_context` or `system_prompt_override`. |
+
+The value is passed as a hint to the model, not processed as code. `custom` is intentionally vague and works best when the note's context describes what the custom oracle actually does.
 
 #### `language`
 

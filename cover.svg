@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="960pt"
+   height="540pt"
+   viewBox="0 0 960.00002 540.00002"
+   version="1.1"
+   id="svg42"
+   sodipodi:docname="cover.svg"
+   inkscape:version="1.2 (dc2aedaf03, 2022-05-15)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <sodipodi:namedview
+     id="namedview44"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:document-units="pt"
+     showgrid="false"
+     inkscape:zoom="0.46327344"
+     inkscape:cx="484.59501"
+     inkscape:cy="345.36838"
+     inkscape:window-width="1920"
+     inkscape:window-height="1009"
+     inkscape:window-x="1912"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="figure_1" />
+  <metadata
+     id="metadata2">
+    <rdf:RDF>
+      <cc:Work>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:date>2026-04-14T07:28:55.415765</dc:date>
+        <dc:format>image/svg+xml</dc:format>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>Matplotlib v3.10.3, https://matplotlib.org/</dc:title>
+          </cc:Agent>
+        </dc:creator>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs6">
+    <rect
+       x="246.50182"
+       y="234.2912"
+       width="367.84482"
+       height="76.316353"
+       id="rect493" />
+    <rect
+       x="286.18631"
+       y="134.31677"
+       width="79.369003"
+       height="59.526756"
+       id="rect437" />
+    <style
+       type="text/css"
+       id="style4">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+  </defs>
+  <g
+     id="figure_1"
+     transform="translate(167.13281,-13.736943)">
+    <g
+       id="patch_1"
+       transform="matrix(2.8429282,0,0,1.6094421,-167.13281,13.736943)">
+      <path
+         d="M 0,335.52 H 337.68 V 0 H 0 Z"
+         style="fill:#121218"
+         id="path8" />
+    </g>
+    <g
+       id="axes_1"
+       transform="matrix(1.477983,0,0,1.477983,-209.12483,57.106709)">
+      <g
+         id="patch_2">
+        <path
+           d="m 168.84,24.7248 73.656,83.16 -26.784,166.32 h -93.744 l -26.784,-166.32 z"
+           clip-path="url(#p5648dbaace)"
+           style="fill:#3b275f;stroke:#a78bfa;stroke-width:4"
+           id="path11" />
+      </g>
+      <g
+         id="patch_3">
+        <path
+           d="m 168.84,24.7248 -73.656,83.16 26.784,166.32 36.828,-99.792 z"
+           clip-path="url(#p5648dbaace)"
+           style="opacity:0.95;fill:#2a1d45"
+           id="path14" />
+      </g>
+      <g
+         id="patch_4">
+        <path
+           d="m 168.84,24.7248 73.656,83.16 -26.784,166.32 -36.828,-99.792 z"
+           clip-path="url(#p5648dbaace)"
+           style="opacity:0.9;fill:#5b3b8c"
+           id="path17" />
+      </g>
+      <g
+         id="patch_5">
+        <path
+           d="m 158.796,174.4128 h 20.088 l 36.828,99.792 h -93.744 z"
+           clip-path="url(#p5648dbaace)"
+           style="opacity:0.35;fill:#7c5ab2"
+           id="path20" />
+      </g>
+      <g
+         id="patch_6">
+        <path
+           d="m 168.84,164.4336 c 11.5427,0 22.61419,-2.10294 30.77612,-5.84568 8.16192,-3.74274 12.74788,-8.81969 12.74788,-14.11272 0,-5.29303 -4.58596,-10.36998 -12.74788,-14.11272 -8.16193,-3.74274 -19.23342,-5.84568 -30.77612,-5.84568 -11.5427,0 -22.61419,2.10294 -30.77612,5.84568 -8.16192,3.74274 -12.74788,8.81969 -12.74788,14.11272 0,5.29303 4.58596,10.36998 12.74788,14.11272 8.16193,3.74274 19.23342,5.84568 30.77612,5.84568 z"
+           clip-path="url(#p5648dbaace)"
+           style="fill:#121218;stroke:#d8ccff;stroke-width:2.5;stroke-linejoin:miter"
+           id="path23" />
+      </g>
+      <g
+         id="patch_7">
+        <path
+           d="m 168.84,156.1176 c 3.10765,0 6.08844,-1.22672 8.28588,-3.40998 2.19744,-2.18326 3.43212,-5.14482 3.43212,-8.23242 0,-3.0876 -1.23468,-6.04916 -3.43212,-8.23242 -2.19744,-2.18326 -5.17823,-3.40998 -8.28588,-3.40998 -3.10765,0 -6.08844,1.22672 -8.28588,3.40998 -2.19744,2.18326 -3.43212,5.14482 -3.43212,8.23242 0,3.0876 1.23468,6.04916 3.43212,8.23242 2.19744,2.18326 5.17823,3.40998 8.28588,3.40998 z"
+           clip-path="url(#p5648dbaace)"
+           style="fill:#d8ccff"
+           id="path26" />
+      </g>
+      <g
+         id="patch_8">
+        <path
+           d="m 172.8576,143.80992 c 0.97669,0 1.91351,-0.38554 2.60413,-1.07171 0.69063,-0.68617 1.07867,-1.61694 1.07867,-2.58733 0,-0.97039 -0.38804,-1.90116 -1.07867,-2.58733 -0.69062,-0.68617 -1.62744,-1.07171 -2.60413,-1.07171 -0.97669,0 -1.91351,0.38554 -2.60413,1.07171 -0.69063,0.68617 -1.07867,1.61694 -1.07867,2.58733 0,0.97039 0.38804,1.90116 1.07867,2.58733 0.69062,0.68617 1.62744,1.07171 2.60413,1.07171 z"
+           clip-path="url(#p5648dbaace)"
+           style="fill:#121218"
+           id="path29" />
+      </g>
+      <g
+         id="patch_9">
+        <path
+           d="m 164.8224,139.15296 c 0.53274,0 1.04373,-0.21029 1.42044,-0.58457 0.3767,-0.37427 0.58836,-0.88197 0.58836,-1.41127 0,-0.5293 -0.21166,-1.037 -0.58836,-1.41127 -0.37671,-0.37428 -0.8877,-0.58457 -1.42044,-0.58457 -0.53274,0 -1.04373,0.21029 -1.42044,0.58457 -0.3767,0.37427 -0.58836,0.88197 -0.58836,1.41127 0,0.5293 0.21166,1.037 0.58836,1.41127 0.37671,0.37428 0.8877,0.58457 1.42044,0.58457 z"
+           clip-path="url(#p5648dbaace)"
+           style="opacity:0.9;fill:#ffffff"
+           id="path32" />
+      </g>
+    </g>
+    <g
+       id="g634"
+       transform="translate(0,-18.514264)">
+      <text
+         xml:space="preserve"
+         transform="matrix(10.361556,0,0,10.361556,-2753.1851,-1210.6285)"
+         id="text435"
+         style="font-size:16px;line-height:1.25;font-family:HamletOrNot;-inkscape-font-specification:HamletOrNot;white-space:pre;shape-inside:url(#rect437);display:inline"><tspan
+           x="286.18555"
+           y="149.97551"
+           id="tspan673"><tspan
+             style="font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono';fill:#ffffff"
+             id="tspan671">SYBYL</tspan></tspan></text>
+      <text
+         xml:space="preserve"
+         transform="matrix(1.3079836,0,0,1.3079836,-97.406912,49.236723)"
+         id="text491"
+         style="font-size:16px;line-height:1.25;font-family:HamletOrNot;-inkscape-font-specification:HamletOrNot;white-space:pre;shape-inside:url(#rect493);display:inline;stroke-linecap:butt;stroke-linejoin:round"><tspan
+           x="246.50195"
+           y="249.95012"
+           id="tspan677"><tspan
+             style="font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono';fill:#ffffff"
+             id="tspan675">An AI Assistant for Solo Tabletop Play</tspan></tspan></text>
+    </g>
+  </g>
+  <defs
+     id="defs40">
+    <clipPath
+       id="p5648dbaace">
+      <rect
+         x="1.4400001"
+         y="1.4400001"
+         width="334.79999"
+         height="332.64001"
+         id="rect37" />
+    </clipPath>
+  </defs>
+</svg>

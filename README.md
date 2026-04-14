@@ -1,5 +1,7 @@
 # Sybyl
 
+![cover](/cover.png)
+
 [![GitHub tag (Latest by date)](https://img.shields.io/github/v/tag/zeruhur/sybyl)](https://github.com/zeruhur/sybyl/releases) ![GitHub all releases](https://img.shields.io/github/downloads/zeruhur/sybyl/total)
 
 Sybyl is an Obsidian plugin for solo tabletop play with provider-backed AI assistance and Lonelog-aware note formatting.

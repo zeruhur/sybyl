@@ -7,7 +7,7 @@ import { ProviderID, SybylSettings, ValidationState } from "./types";
 export const DEFAULT_SETTINGS: SybylSettings = {
   activeProvider: "gemini",
   providers: {
-    gemini: { apiKey: "", defaultModel: "gemma-4-26b-it" },
+    gemini: { apiKey: "", defaultModel: "gemma-4-26b-a4b-it" },
     openai: { apiKey: "", defaultModel: "gpt-5.2", baseUrl: "https://api.openai.com/v1" },
     anthropic: { apiKey: "", defaultModel: "claude-sonnet-4-6" },
     ollama: { baseUrl: "http://localhost:11434", defaultModel: "gemma3" },

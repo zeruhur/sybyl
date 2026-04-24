@@ -7,6 +7,9 @@
    id="svg42"
    sodipodi:docname="cover.svg"
    inkscape:version="1.2 (dc2aedaf03, 2022-05-15)"
+   inkscape:export-filename="cover.png"
+   inkscape:export-xdpi="72"
+   inkscape:export-ydpi="72"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -157,9 +160,9 @@
          style="font-size:16px;line-height:1.25;font-family:HamletOrNot;-inkscape-font-specification:HamletOrNot;white-space:pre;shape-inside:url(#rect437);display:inline"><tspan
            x="286.18555"
            y="149.97551"
-           id="tspan673"><tspan
+           id="tspan716"><tspan
              style="font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono';fill:#ffffff"
-             id="tspan671">SYBYL</tspan></tspan></text>
+             id="tspan714">SYBYL</tspan></tspan></text>
       <text
          xml:space="preserve"
          transform="matrix(1.3079836,0,0,1.3079836,-97.406912,49.236723)"
@@ -167,9 +170,9 @@
          style="font-size:16px;line-height:1.25;font-family:HamletOrNot;-inkscape-font-specification:HamletOrNot;white-space:pre;shape-inside:url(#rect493);display:inline;stroke-linecap:butt;stroke-linejoin:round"><tspan
            x="246.50195"
            y="249.95012"
-           id="tspan677"><tspan
+           id="tspan720"><tspan
              style="font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono';fill:#ffffff"
-             id="tspan675">An AI Assistant for Solo Tabletop Play</tspan></tspan></text>
+             id="tspan718">An AI Assistant for Solo Tabletop Play</tspan></tspan></text>
     </g>
   </g>
   <defs

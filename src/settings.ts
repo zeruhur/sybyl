@@ -38,7 +38,6 @@ export function normalizeSettings(raw: Partial<SybylSettings> | null | undefined
 
 export class SybylSettingTab extends PluginSettingTab {
   private validation: Partial<Record<ProviderID, ValidationState>> = {};
-  private ollamaModels: string[] = [];
   private modelCache: Partial<Record<ProviderID, string[]>> = {};
   private fetchingProviders = new Set<ProviderID>();
 
@@ -58,7 +57,12 @@ export class SybylSettingTab extends PluginSettingTab {
 
   private maybeFetchModels(): void {
     const active = this.plugin.settings.activeProvider;
-    if (active === "ollama") return;
+    if (active === "ollama") {
+      if (!this.modelCache.ollama && !this.fetchingProviders.has("ollama")) {
+        void this.fetchModels("ollama");
+      }
+      return;
+    }
     const config = this.plugin.settings.providers[active];
     const apiKey = (config as { apiKey?: string }).apiKey?.trim();
     if (apiKey && !this.modelCache[active] && !this.fetchingProviders.has(active)) {
@@ -270,9 +274,9 @@ export class SybylSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Available Models")
       .addDropdown((dropdown) => {
-        const options = this.ollamaModels.length ? this.ollamaModels : [config.defaultModel];
-        options.forEach((model) => dropdown.addOption(model, model));
-        dropdown.setValue(options.includes(config.defaultModel) ? config.defaultModel : options[0]);
+        const models = this.modelOptionsFor("ollama", config.defaultModel);
+        models.forEach((m) => dropdown.addOption(m, m));
+        dropdown.setValue(config.defaultModel);
         dropdown.onChange(async (value) => {
           config.defaultModel = value;
           await this.plugin.saveSettings();
@@ -430,13 +434,13 @@ export class SybylSettingTab extends PluginSettingTab {
       const provider = new OllamaProvider(this.plugin.settings.providers.ollama);
       const valid = await provider.validate();
       this.validation.ollama = { status: valid ? "valid" : "invalid" };
-      this.ollamaModels = valid ? await provider.listModels() : [];
+      this.modelCache.ollama = valid ? await provider.listModels() : undefined;
     } catch (error) {
       this.validation.ollama = {
         status: "invalid",
         message: error instanceof Error ? error.message : String(error)
       };
-      this.ollamaModels = [];
+      this.modelCache.ollama = undefined;
       new Notice(this.validation.ollama.message ?? "Ollama validation failed.");
     }
     this.display();

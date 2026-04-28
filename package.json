@@ -1,6 +1,6 @@
 {
   "name": "sybyl",
-  "version": "0.1.1",
+  "version": "0.11.5",
   "description": "Obsidian plugin for solo tabletop play with Lonelog support",
   "license": "MIT",
   "author": "Roberto Bisceglie",

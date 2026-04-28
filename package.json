@@ -9,7 +9,8 @@
     "build": "node esbuild.config.mjs",
     "dev": "node esbuild.config.mjs",
     "check": "tsc --noEmit",
-    "test": "tsc --noEmit"
+    "test": "tsc --noEmit",
+    "version": "node -e \"const fs=require('fs');const m=JSON.parse(fs.readFileSync('manifest.json','utf8'));m.version=process.env.npm_package_version;fs.writeFileSync('manifest.json',JSON.stringify(m,null,2)+'\\n');\" && git add manifest.json"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",

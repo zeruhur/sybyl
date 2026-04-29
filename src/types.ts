@@ -115,3 +115,8 @@ export interface ModalField {
   value?: string;
   optional?: boolean;
 }
+
+export interface IPluginFacade {
+  settings: SybylSettings;
+  saveSettings(): Promise<void>;
+}

@@ -1,6 +1,7 @@
-import { App, Modal, Notice, Plugin, Setting, TFile } from "obsidian";
+import { App, Modal, Notice, Setting, TFile } from "obsidian";
 import { describeSourceRef, listVaultCandidateFiles } from "./sourceUtils";
-import { ModalField, SourceRef } from "./types";
+import { IPluginFacade, ModalField, ProviderID, SourceRef } from "./types";
+import { getProvider } from "./providers";
 
 export class InputModal extends Modal {
   private readonly values: Record<string, string>;
@@ -231,7 +232,7 @@ export interface QuickMenuItem {
 export class QuickMenuModal extends Modal {
   private readonly items: QuickMenuItem[];
 
-  constructor(app: App, private readonly plugin: Plugin) {
+  constructor(app: App, private readonly plugin: IPluginFacade) {
     super(app);
     this.items = [
       { label: "Start Scene",           commandId: "sybyl:start-scene" },
@@ -254,9 +255,104 @@ export class QuickMenuModal extends Modal {
           btn.setButtonText("Run").setCta().onClick(() => {
             this.close();
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (this.plugin.app as any).commands.executeCommandById(item.commandId);
+            (this.app as any).commands.executeCommandById(item.commandId);
           })
         );
+    }
+    const active = this.plugin.settings.activeProvider;
+    const activeModel = this.plugin.settings.providers[active].defaultModel;
+    new Setting(this.contentEl)
+      .setName("Switch Provider / Model")
+      .setDesc(`${active} / ${activeModel}`)
+      .addButton((btn) =>
+        btn.setButtonText("Switch").onClick(() => {
+          this.close();
+          new ProviderSwitchModal(this.app, this.plugin).open();
+        })
+      );
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
+}
+
+export class ProviderSwitchModal extends Modal {
+  private selectedProvider: ProviderID;
+  private selectedModel: string;
+  private availableModels: string[] = [];
+
+  constructor(app: App, private readonly plugin: IPluginFacade) {
+    super(app);
+    this.selectedProvider = plugin.settings.activeProvider;
+    this.selectedModel = plugin.settings.providers[this.selectedProvider].defaultModel;
+  }
+
+  onOpen(): void {
+    this.titleEl.setText("Switch Provider / Model");
+    this.render();
+    void this.fetchModels();
+  }
+
+  private render(): void {
+    this.contentEl.empty();
+
+    new Setting(this.contentEl)
+      .setName("Provider")
+      .addDropdown((dd) => {
+        dd.addOption("gemini", "Gemini");
+        dd.addOption("openai", "OpenAI");
+        dd.addOption("anthropic", "Anthropic (Claude)");
+        dd.addOption("ollama", "Ollama (local)");
+        dd.addOption("openrouter", "OpenRouter");
+        dd.setValue(this.selectedProvider);
+        dd.onChange((value) => {
+          this.selectedProvider = value as ProviderID;
+          this.selectedModel = this.plugin.settings.providers[this.selectedProvider].defaultModel;
+          this.availableModels = [];
+          this.render();
+          void this.fetchModels();
+        });
+      });
+
+    const models = this.availableModels.length
+      ? (this.availableModels.includes(this.selectedModel)
+          ? this.availableModels
+          : [this.selectedModel, ...this.availableModels])
+      : [this.selectedModel];
+
+    new Setting(this.contentEl)
+      .setName("Model")
+      .addDropdown((dd) => {
+        models.forEach((m) => dd.addOption(m, m));
+        dd.setValue(this.selectedModel);
+        dd.onChange((value) => { this.selectedModel = value; });
+      });
+
+    new Setting(this.contentEl)
+      .addButton((btn) =>
+        btn.setButtonText("Switch").setCta().onClick(async () => {
+          this.plugin.settings.activeProvider = this.selectedProvider;
+          this.plugin.settings.providers[this.selectedProvider].defaultModel = this.selectedModel;
+          await this.plugin.saveSettings();
+          new Notice(`Sybyl: ${this.selectedProvider} / ${this.selectedModel}`);
+          this.close();
+        })
+      );
+  }
+
+  private async fetchModels(): Promise<void> {
+    try {
+      const models = await getProvider(this.plugin.settings, this.selectedProvider).listModels();
+      if (models.length > 0) {
+        this.availableModels = models;
+        if (!models.includes(this.selectedModel)) {
+          this.selectedModel = models[0];
+        }
+        this.render();
+      }
+    } catch {
+      // silently fail — dropdown keeps showing current default
     }
   }
 

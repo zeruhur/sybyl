@@ -86,7 +86,6 @@ export function buildRequest(
     userMessage: contextMessage,
     temperature: fm.temperature ?? settings.defaultTemperature,
     maxOutputTokens,
-    model: fm.model,
     resolvedSources: []
   };
 }

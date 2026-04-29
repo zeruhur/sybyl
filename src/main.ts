@@ -53,7 +53,7 @@ export default class SybylPlugin extends Plugin {
     userMessage: string,
     maxOutputTokens = 512
   ): Promise<GenerationResponse> {
-    const provider = getProvider(this.settings, fm.provider);
+    const provider = getProvider(this.settings);
     const request = buildRequest(fm, userMessage, this.settings, maxOutputTokens, noteBody);
     const progress = new Notice("Sybyl: Generating...", 0);
     try {
@@ -69,14 +69,13 @@ export default class SybylPlugin extends Plugin {
     maxOutputTokens: number,
     resolvedSources: ResolvedSource[] = []
   ): Promise<GenerationResponse> {
-    const provider = getProvider(this.settings, fm.provider);
+    const provider = getProvider(this.settings);
     const request: GenerationRequest = {
       systemPrompt: buildSystemPrompt(fm, false),
       userMessage,
       resolvedSources,
       temperature: fm.temperature ?? this.settings.defaultTemperature,
-      maxOutputTokens,
-      model: fm.model
+      maxOutputTokens
     };
     const progress = new Notice("Sybyl: Generating...", 0);
     try {
